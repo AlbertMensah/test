@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OBJ Viewer with On-Screen Controls</title>
+    <title>OBJ Viewer with Advanced Controls</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
     <style>
@@ -17,7 +17,18 @@
         gap: 5px;
         z-index: 10;
       }
-      .controls button {
+
+      .lights {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 10;
+      }
+
+      button {
         background-color: #444;
         color: white;
         border: none;
@@ -25,24 +36,33 @@
         font-size: 16px;
         cursor: pointer;
         opacity: 0.8;
+        padding: 8px;
       }
-      .controls button:hover {
+
+      button:hover {
         opacity: 1;
       }
     </style>
   </head>
   <body>
-    <!-- On-Screen Directional Buttons -->
+    <!-- Movement Controls -->
     <div class="controls">
-      <div></div>
+      <button onclick="move('forward-left')">↖</button>
       <button onclick="move('forward')">↑</button>
-      <div></div>
+      <button onclick="move('forward-right')">↗</button>
       <button onclick="move('left')">←</button>
-      <div></div>
+      <button onclick="jump()">⤒</button>
       <button onclick="move('right')">→</button>
-      <div></div>
+      <button onclick="move('backward-left')">↙</button>
       <button onclick="move('backward')">↓</button>
-      <div></div>
+      <button onclick="move('backward-right')">↘</button>
+    </div>
+
+    <!-- Light Controls -->
+    <div class="lights">
+      <button onclick="toggleLight('ambient')">Toggle Ambient</button>
+      <button onclick="toggleLight('directional')">Toggle Directional</button>
+      <button onclick="toggleLight('point')">Toggle Point</button>
     </div>
 
     <!-- A-Frame Scene -->
@@ -53,17 +73,16 @@
       </a-assets>
 
       <!-- Lights -->
-      <a-light type="ambient" color="#ffffff" intensity="1"></a-light>
-      <a-light type="directional" color="#ffffff" intensity="3" position="2 4 3"></a-light>
-      <a-light type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
+      <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
+      <a-light id="directionalLight" type="directional" color="#ffffff" intensity="3" position="2 4 3"></a-light>
+      <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
 
       <!-- Camera Rig -->
-      <a-entity id="rig" position="0 1.6 3">
+      <a-entity id="rig" position="0 1.6 3" dynamic-body>
         <a-camera look-controls wasd-controls-enabled="false"></a-camera>
-        <a-sphere radius="0.1" dynamic-body visible="false"></a-sphere>
       </a-entity>
 
-      <!-- Model -->
+      <!-- 3D Model -->
       <a-entity id="model"
                 obj-model="obj: #my-obj; mtl: #my-mtl"
                 position="0 0 -3"
@@ -78,19 +97,48 @@
                static-body></a-plane>
     </a-scene>
 
-    <!-- Movement Script -->
+    <!-- Movement & Light Script -->
     <script>
       function move(direction) {
         const rig = document.querySelector('#rig');
         const step = 0.3;
-        const position = rig.getAttribute('position');
+        const pos = rig.getAttribute('position');
 
-        if (direction === 'forward') position.z -= step;
-        else if (direction === 'backward') position.z += step;
-        else if (direction === 'left') position.x -= step;
-        else if (direction === 'right') position.x += step;
+        const directions = {
+          forward: [0, 0, -step],
+          backward: [0, 0, step],
+          left: [-step, 0, 0],
+          right: [step, 0, 0],
+          'forward-left': [-step, 0, -step],
+          'forward-right': [step, 0, -step],
+          'backward-left': [-step, 0, step],
+          'backward-right': [step, 0, step]
+        };
 
-        rig.setAttribute('position', position);
+        const [dx, dy, dz] = directions[direction];
+        pos.x += dx;
+        pos.y += dy;
+        pos.z += dz;
+
+        rig.setAttribute('position', pos);
+      }
+
+      function jump() {
+        const rig = document.querySelector('#rig');
+        const body = rig.body; // physics body
+        if (body && body.velocity.y < 0.1) {
+          body.velocity.y = 5; // upward force
+        }
+      }
+
+      function toggleLight(type) {
+        const lightMap = {
+          ambient: 'ambientLight',
+          directional: 'directionalLight',
+          point: 'pointLight'
+        };
+        const el = document.querySelector(`#${lightMap[type]}`);
+        el.setAttribute('visible', !el.getAttribute('visible'));
       }
     </script>
   </body>
