@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OBJ Viewer</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <!-- Camera positioned to see the object -->
+      <a-entity position="0 1.6 3">
+        <a-camera></a-camera>
+      </a-entity>
+
+      <!-- Lighting -->
+      <a-light type="ambient" color="#ccc"></a-light>
+      <a-light type="directional" position="1 2 1" intensity="0.8"></a-light>
+
+      <!-- Assets -->
+      <a-assets>
+        <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
+        <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
+      </a-assets>
+
+      <!-- 3D Model -->
+      <a-entity obj-model="obj: #my-obj; mtl: #my-mtl" position="0 0 -3" scale="1 1 1"></a-entity>
+
+      <!-- Optional ground -->
+      <a-plane rotation="-90 0 0" width="10" height="10" color="#f0f0f0"></a-plane>
+    </a-scene>
+  </body>
+</html>
