@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OBJ Viewer with Controls</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OBJ Viewer with GLTF Import</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
   <style>
@@ -12,10 +12,7 @@
       overflow: hidden;
     }
 
-    .controls,
-    .camera-controls,
-    .lights,
-    .reset {
+    .controls, .camera-controls, .lights, .reset, .import-control {
       position: absolute;
       z-index: 1000;
     }
@@ -50,7 +47,12 @@
       gap: 10px;
     }
 
-    button {
+    .import-control {
+      top: 20px;
+      right: 20px;
+    }
+
+    button, input[type="file"] {
       background-color: #333;
       color: white;
       border: none;
@@ -61,7 +63,7 @@
       padding: 10px;
     }
 
-    button:hover {
+    button:hover, input[type="file"]:hover {
       opacity: 1;
     }
   </style>
@@ -81,7 +83,7 @@
     <button onclick="move('backward-right')" title="Move backward and right">↘</button>
   </div>
 
-  <!-- Camera Up/Down Controls -->
+  <!-- Camera Controls -->
   <div class="camera-controls">
     <button onclick="moveVertical('up')" title="Move camera up">Cam ↑</button>
     <button onclick="moveVertical('down')" title="Move camera down">Cam ↓</button>
@@ -89,30 +91,33 @@
 
   <!-- Reset Button -->
   <div class="reset">
-    <button onclick="resetCamera()" title="Reset camera to start position">Reset</button>
+    <button onclick="resetCamera()" title="Reset camera position">Reset</button>
   </div>
 
-  <!-- Light Toggle Controls -->
+  <!-- Light Controls -->
   <div class="lights">
     <button onclick="toggleLight('ambient')" title="Toggle ambient light">Ambient</button>
     <button onclick="toggleLight('directional')" title="Toggle directional light">Directional</button>
     <button onclick="toggleLight('point')" title="Toggle point light">Point</button>
   </div>
 
+  <!-- Import GLTF Button -->
+  <div class="import-control">
+    <label title="Import a GLTF or GLB file">
+      <input type="file" accept=".gltf,.glb" onchange="importGLTF(event)" />
+    </label>
+  </div>
+
   <!-- A-Frame Scene -->
   <a-scene physics="gravity: -9.8">
-    <a-assets>
-      <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
-      <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
-    </a-assets>
+    <a-assets></a-assets>
 
-    <!-- Sky -->
     <a-sky color="#87CEEB"></a-sky>
 
     <!-- Lights -->
-    <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
-    <a-light id="directionalLight" type="directional" color="#ffffff" intensity="2" position="2 4 3"></a-light>
-    <a-light id="pointLight" type="point" color="#ffffff" intensity="2" distance="10" position="0 3 3"></a-light>
+    <a-light id="ambientLight" type="ambient" color="#fff" intensity="1"></a-light>
+    <a-light id="directionalLight" type="directional" color="#fff" intensity="2" position="2 4 3"></a-light>
+    <a-light id="pointLight" type="point" color="#fff" intensity="2" distance="10" position="0 3 3"></a-light>
 
     <!-- Ground -->
     <a-plane rotation="-90 0 0"
@@ -121,20 +126,13 @@
              color="#8B4513"
              static-body="shape: box"></a-plane>
 
-    <!-- 3D Model -->
-    <a-entity id="model"
-              obj-model="obj: #my-obj; mtl: #my-mtl"
-              position="0 0 -3"
-              scale="1 1 1"
-              static-body></a-entity>
-
-    <!-- Camera Rig with collision -->
+    <!-- Camera Rig with physics -->
     <a-entity id="rig" position="0 1.6 3" dynamic-body="shape: capsule; mass: 1; linearDamping: 0.9">
       <a-camera look-controls wasd-controls-enabled="false" position="0 1.6 0"></a-camera>
     </a-entity>
   </a-scene>
 
-  <!-- Movement and Light Script -->
+  <!-- Script Section -->
   <script>
     const initialPosition = { x: 0, y: 1.6, z: 3 };
 
@@ -197,7 +195,27 @@
       const isVisible = light.getAttribute('visible');
       light.setAttribute('visible', !isVisible);
     }
+
+    function importGLTF(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const url = URL.createObjectURL(new Blob([e.target.result]));
+        const rig = document.getElementById('rig');
+        const rigPos = rig.getAttribute('position');
+
+        const newEntity = document.createElement('a-entity');
+        newEntity.setAttribute('gltf-model', url);
+        newEntity.setAttribute('position', `${rigPos.x} ${rigPos.y} ${rigPos.z - 2}`);
+        newEntity.setAttribute('scale', '1 1 1');
+        newEntity.setAttribute('static-body', '');
+        document.querySelector('a-scene').appendChild(newEntity);
+      };
+      reader.readAsArrayBuffer(file);
+    }
   </script>
+
 </body>
 </html>
-
