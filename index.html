@@ -1,206 +1,284 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OBJ & GLB Viewer with Controls</title>
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-
-    .controls, .lights {
-      position: absolute;
-      z-index: 1000;
-      user-select: none;
-    }
-
-    .controls {
-      bottom: 20px;
-      left: 20px;
-      display: grid;
-      grid-template-columns: repeat(3, 50px);
-      grid-template-rows: repeat(3, 50px);
-      gap: 5px;
-    }
-
-    .updown-controls {
-      bottom: 80px;
-      left: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .lights {
-      top: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .reset-btn {
-      bottom: 80px;
-      left: 80px;
-      width: 50px;
-      height: 50px;
-      font-size: 16px;
-      background-color: #444;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      opacity: 0.85;
-    }
-    .reset-btn:hover {
-      opacity: 1;
-    }
-
-    button {
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 18px;
-      cursor: pointer;
-      opacity: 0.85;
-    }
-
-    button:hover {
-      opacity: 1;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Movement Controls -->
-  <div class="controls" role="group" aria-label="Movement controls">
-    <button title="Move forward-left" onclick="move('forward-left')">↖</button>
-    <button title="Move forward" onclick="move('forward')">↑</button>
-    <button title="Move forward-right" onclick="move('forward-right')">↗</button>
-    <button title="Move left" onclick="move('left')">←</button>
-    <button title="Jump" onclick="jump()" title="Jump">⤒</button>
-    <button title="Move right" onclick="move('right')">→</button>
-    <button title="Move backward-left" onclick="move('backward-left')">↙</button>
-    <button title="Move backward" onclick="move('backward')">↓</button>
-    <button title="Move backward-right" onclick="move('backward-right')">↘</button>
-  </div>
-
-  <!-- Up / Down Controls -->
-  <div class="updown-controls" role="group" aria-label="Camera up and down controls">
-    <button title="Move camera up" onclick="moveVertical(0.3)">▲</button>
-    <button title="Move camera down" onclick="moveVertical(-0.3)">▼</button>
-  </div>
-
-  <!-- Reset Button -->
-  <button class="reset-btn" title="Reset camera position" onclick="resetPosition()">⟳</button>
-
-  <!-- Light Toggle Controls -->
-  <div class="lights" role="group" aria-label="Light toggle controls">
-    <button title="Toggle ambient light" onclick="toggleLight('ambient')">Toggle Ambient</button>
-    <button title="Toggle directional light" onclick="toggleLight('directional')">Toggle Directional</button>
-    <button title="Toggle point light" onclick="toggleLight('point')">Toggle Point</button>
-  </div>
-
-  <!-- A-Frame Scene -->
-  <a-scene physics="gravity: -9.8" embedded>
-
-    <a-assets>
-      <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
-      <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
-    </a-assets>
-
-    <!-- Lights -->
-    <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
-    <a-light id="directionalLight" type="directional" color="#ffffff" intensity="3" position="2 4 3"></a-light>
-    <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
-
-    <!-- Sky -->
-    <a-sky color="#87ceeb"></a-sky>
-
-    <!-- Camera Rig placed inside the GLB building -->
-    <a-entity id="rig" position="5 1.6 -5" dynamic-body>
-      <a-camera look-controls wasd-controls-enabled="false"></a-camera>
-    </a-entity>
-
-    <!-- GLB Model -->
-    <a-entity gltf-model="https://github.com/AlbertMensah/test/raw/refs/heads/main/Old%20Gas%20Station%20Interior%20(Splat).glb"
-              position="5 0 -5"
-              scale="1 1 1"
-              static-body></a-entity>
-
-    <!-- Original OBJ Model -->
-    <a-entity id="model"
-              obj-model="obj: #my-obj; mtl: #my-mtl"
-              position="0 0 -3"
-              scale="1 1 1"
-              static-body></a-entity>
-
-    <!-- Ground -->
-    <a-plane rotation="-90 0 0"
-             width="10"
-             height="10"
-             color="#8B4513"
-             static-body></a-plane>
-  </a-scene>
-
-  <script>
-    const rig = document.querySelector('#rig');
-
-    function move(direction) {
-      const step = 0.3;
-      const pos = rig.getAttribute('position');
-
-      const directions = {
-        forward: [0, 0, -step],
-        backward: [0, 0, step],
-        left: [-step, 0, 0],
-        right: [step, 0, 0],
-        'forward-left': [-step, 0, -step],
-        'forward-right': [step, 0, -step],
-        'backward-left': [-step, 0, step],
-        'backward-right': [step, 0, step]
-      };
-
-      if (!directions[direction]) return;
-
-      pos.x += directions[direction][0];
-      pos.y += directions[direction][1];
-      pos.z += directions[direction][2];
-
-      rig.setAttribute('position', pos);
-    }
-
-    function moveVertical(amount) {
-      const pos = rig.getAttribute('position');
-      pos.y += amount;
-      rig.setAttribute('position', pos);
-    }
-
-    function jump() {
-      if (rig.body && rig.body.velocity.y < 0.1) {
-        rig.body.velocity.y = 5;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBJ & GLB Viewer with Camera Controls and Position Adjuster</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
       }
-    }
 
-    function resetPosition() {
-      rig.setAttribute('position', { x: 5, y: 1.6, z: -5 });
-    }
+      .controls, .lights, .camera-pos {
+        position: absolute;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 8px;
+        border-radius: 8px;
+        user-select: none;
+      }
 
-    function toggleLight(type) {
-      const idMap = {
-        ambient: 'ambientLight',
-        directional: 'directionalLight',
-        point: 'pointLight'
-      };
-      const light = document.getElementById(idMap[type]);
-      const isVisible = light.getAttribute('visible');
-      light.setAttribute('visible', !isVisible);
-    }
-  </script>
-</body>
+      .controls {
+        bottom: 20px;
+        left: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, 50px);
+        grid-template-rows: repeat(3, 50px);
+        gap: 5px;
+      }
+
+      .lights {
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .camera-pos {
+        top: 20px;
+        left: 20px;
+        width: 180px;
+        color: white;
+        font-size: 14px;
+      }
+
+      .camera-pos label {
+        display: block;
+        margin: 4px 0 2px;
+      }
+
+      .camera-pos input {
+        width: 100%;
+        padding: 4px;
+        border-radius: 4px;
+        border: none;
+        font-size: 14px;
+      }
+
+      button {
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.85;
+        position: relative;
+      }
+
+      button:hover {
+        opacity: 1;
+      }
+
+      /* Tooltip styling */
+      button[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #222;
+        color: #eee;
+        padding: 4px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+        pointer-events: none;
+        font-size: 12px;
+        opacity: 0.9;
+        z-index: 2000;
+      }
+
+      /* Up/Down buttons container moved left a bit */
+      .vertical-controls {
+        position: absolute;
+        bottom: 85px;
+        left: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      /* Reset button next to vertical controls */
+      .reset-btn {
+        position: absolute;
+        bottom: 135px;
+        left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Movement Controls -->
+    <div class="controls" aria-label="Camera Movement Controls">
+      <button onclick="move('forward-left')" title="Move forward-left">↖</button>
+      <button onclick="move('forward')" title="Move forward">↑</button>
+      <button onclick="move('forward-right')" title="Move forward-right">↗</button>
+      <button onclick="move('left')" title="Move left">←</button>
+      <button onclick="jump()" title="Jump">⤒</button>
+      <button onclick="move('right')" title="Move right">→</button>
+      <button onclick="move('backward-left')" title="Move backward-left">↙</button>
+      <button onclick="move('backward')" title="Move backward">↓</button>
+      <button onclick="move('backward-right')" title="Move backward-right">↘</button>
+    </div>
+
+    <!-- Up/Down Buttons -->
+    <div class="vertical-controls" aria-label="Camera Up and Down Controls">
+      <button onclick="moveUp()" title="Move camera up">⬆️</button>
+      <button onclick="moveDown()" title="Move camera down">⬇️</button>
+    </div>
+
+    <!-- Reset Button -->
+    <div class="reset-btn">
+      <button onclick="resetCameraPosition()" title="Reset camera position">⟳ Reset</button>
+    </div>
+
+    <!-- Light Toggle Controls -->
+    <div class="lights" aria-label="Light Toggle Controls">
+      <button onclick="toggleLight('ambient')" title="Toggle Ambient Light">Toggle Ambient</button>
+      <button onclick="toggleLight('directional')" title="Toggle Directional Light">Toggle Directional</button>
+      <button onclick="toggleLight('point')" title="Toggle Point Light">Toggle Point</button>
+    </div>
+
+    <!-- Camera Position Adjuster -->
+    <div class="camera-pos" aria-label="Camera Position Adjuster">
+      <label for="posX">Camera X</label>
+      <input type="number" id="posX" step="0.1" value="5" />
+      <label for="posY">Camera Y</label>
+      <input type="number" id="posY" step="0.1" value="1.6" />
+      <label for="posZ">Camera Z</label>
+      <input type="number" id="posZ" step="0.1" value="-5" />
+    </div>
+
+    <!-- A-Frame Scene -->
+    <a-scene physics="gravity: -9.8">
+      <a-assets>
+        <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
+        <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
+      </a-assets>
+
+      <!-- Lights -->
+      <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
+      <a-light id="directionalLight" type="directional" color="#ffffff" intensity="3" position="2 4 3"></a-light>
+      <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
+
+      <!-- Camera Rig placed inside the gas station -->
+      <a-entity id="rig" position="5 1.6 -5" dynamic-body>
+        <a-camera look-controls wasd-controls-enabled="false"></a-camera>
+      </a-entity>
+
+      <!-- GLB Model -->
+      <a-entity gltf-model="https://github.com/AlbertMensah/test/raw/refs/heads/main/Old%20Gas%20Station%20Interior%20(Splat).glb"
+                position="5 0 -5"
+                scale="1 1 1"
+                static-body></a-entity>
+
+      <!-- Original OBJ Model -->
+      <a-entity id="model"
+                obj-model="obj: #my-obj; mtl: #my-mtl"
+                position="0 0 -3"
+                scale="1 1 1"
+                static-body></a-entity>
+
+      <!-- Ground -->
+      <a-plane rotation="-90 0 0" width="10" height="10" color="#87CEEB" static-body></a-plane>
+
+      <!-- Sky -->
+      <a-sky color="#87CEEB"></a-sky>
+    </a-scene>
+
+    <!-- Scripts -->
+    <script>
+      const rig = document.querySelector('#rig');
+
+      function move(direction) {
+        const step = 0.3;
+        const pos = rig.getAttribute('position');
+
+        const directions = {
+          forward: [0, 0, -step],
+          backward: [0, 0, step],
+          left: [-step, 0, 0],
+          right: [step, 0, 0],
+          'forward-left': [-step, 0, -step],
+          'forward-right': [step, 0, -step],
+          'backward-left': [-step, 0, step],
+          'backward-right': [step, 0, step]
+        };
+
+        if (!directions[direction]) return;
+
+        pos.x += directions[direction][0];
+        pos.y += directions[direction][1];
+        pos.z += directions[direction][2];
+
+        rig.setAttribute('position', pos);
+        updatePositionInputs(pos);
+      }
+
+      function jump() {
+        if (rig.body && rig.body.velocity.y < 0.1) {
+          rig.body.velocity.y = 5;
+        }
+      }
+
+      function moveUp() {
+        const pos = rig.getAttribute('position');
+        pos.y += 0.3;
+        rig.setAttribute('position', pos);
+        updatePositionInputs(pos);
+      }
+
+      function moveDown() {
+        const pos = rig.getAttribute('position');
+        pos.y -= 0.3;
+        rig.setAttribute('position', pos);
+        updatePositionInputs(pos);
+      }
+
+      function resetCameraPosition() {
+        const resetPos = { x: 5, y: 1.6, z: -5 };
+        rig.setAttribute('position', resetPos);
+        updatePositionInputs(resetPos);
+      }
+
+      function toggleLight(type) {
+        const idMap = {
+          ambient: 'ambientLight',
+          directional: 'directionalLight',
+          point: 'pointLight'
+        };
+        const light = document.getElementById(idMap[type]);
+        const isVisible = light.getAttribute('visible');
+        light.setAttribute('visible', !isVisible);
+      }
+
+      // Update inputs when camera moves
+      function updatePositionInputs(pos) {
+        document.getElementById('posX').value = pos.x.toFixed(2);
+        document.getElementById('posY').value = pos.y.toFixed(2);
+        document.getElementById('posZ').value = pos.z.toFixed(2);
+      }
+
+      // Update camera position when inputs change
+      ['posX', 'posY', 'posZ'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', (e) => {
+          const pos = rig.getAttribute('position');
+          const val = parseFloat(e.target.value);
+          if (isNaN(val)) return;
+          if (id === 'posX') pos.x = val;
+          else if (id === 'posY') pos.y = val;
+          else if (id === 'posZ') pos.z = val;
+          rig.setAttribute('position', pos);
+        });
+      });
+
+      // Initialize inputs on load
+      updatePositionInputs(rig.getAttribute('position'));
+    </script>
+  </body>
 </html>
