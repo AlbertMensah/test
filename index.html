@@ -23,6 +23,16 @@
         <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
       </a-assets>
 
+<!-- Ambient light (general brightness) -->
+<a-light type="ambient" color="#ffffff" intensity="1"></a-light>
+
+<!-- Directional light (like sunlight) -->
+<a-light type="directional" color="#ffffff" intensity="1" position="2 4 3" target="#model"></a-light>
+
+<!-- Point light to give extra highlights -->
+<a-light type="point" color="#ffffff" intensity="1" distance="10" position="0 3 3"></a-light>
+
+
       <!-- 3D Model -->
       <a-entity obj-model="obj: #my-obj; mtl: #my-mtl" position="0 0 -3" scale="1 1 1"></a-entity>
 
