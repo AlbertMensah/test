@@ -65,7 +65,7 @@
 
 <!-- Reset Button -->
 <div class="reset">
-  <button title="Reset Camera Position" onclick="resetCamera()">⟳</button>
+  <button title="Reset Camera to Gas Station" onclick="resetCamera()">⟳</button>
 </div>
 
 <!-- Light Controls -->
@@ -80,7 +80,7 @@
   <a-assets>
     <a-asset-item id="my-obj" src="https://albertmensah.github.io/test/test.obj"></a-asset-item>
     <a-asset-item id="my-mtl" src="https://albertmensah.github.io/test/test.mtl"></a-asset-item>
-    <a-asset-item id="gas-station" src="https://albertmensah.github.io/test/Old%20Gas%20Station%20Interior%20(Splat).glb"></a-asset-item>
+    <a-asset-item id="gas-station" src="https://github.com/AlbertMensah/test/raw/refs/heads/main/Old%20Gas%20Station%20Interior%20(Splat).glb"></a-asset-item>
   </a-assets>
 
   <a-sky color="#87CEEB"></a-sky>
@@ -91,7 +91,7 @@
   <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
 
   <!-- Camera -->
-  <a-entity id="rig" position="0 1.6 3" dynamic-body>
+  <a-entity id="rig" position="6 2 -3" dynamic-body>
     <a-camera look-controls wasd-controls-enabled="false"></a-camera>
   </a-entity>
 
@@ -102,7 +102,8 @@
             static-body></a-entity>
 
   <!-- GLB Model -->
-  <a-entity gltf-model="#gas-station"
+  <a-entity id="gasStationModel"
+            gltf-model="#gas-station"
             position="5 0 -5"
             scale="1 1 1"
             static-body></a-entity>
@@ -151,7 +152,14 @@
 
   function resetCamera() {
     const rig = document.querySelector('#rig');
-    rig.setAttribute('position', { x: 0, y: 1.6, z: 3 });
+    const model = document.querySelector('#gasStationModel');
+    const modelPos = model.getAttribute('position');
+    const offset = { x: 1, y: 2, z: 2 }; // adjust as needed
+    rig.setAttribute('position', {
+      x: modelPos.x + offset.x,
+      y: modelPos.y + offset.y,
+      z: modelPos.z + offset.z
+    });
     if (rig.body) {
       rig.body.velocity.set(0, 0, 0);
     }
