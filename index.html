@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OBJ Viewer with Controls</title>
+  <title>Multi-Model 3D Viewer</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
   <script src="https://unpkg.com/aframe-obj-loader-component@1.0.0/dist/aframe-obj-loader-component.min.js"></script>
@@ -104,7 +104,9 @@
     <input type="file" id="obj-file" accept=".obj"><br>
     <label>Upload MTL:</label><br>
     <input type="file" id="mtl-file" accept=".mtl"><br>
-    <button onclick="loadCustomModel()">Load Model</button>
+    <label>Upload GLTF/GLB:</label><br>
+    <input type="file" id="gltf-file" accept=".gltf,.glb"><br>
+    <button onclick="loadCustomModel()">Add Model</button>
   </div>
 
   <!-- A-Frame Scene -->
@@ -117,9 +119,7 @@
     <a-light id="directionalLight" type="directional" color="#ffffff" intensity="2" position="2 4 3"></a-light>
     <a-light id="pointLight" type="point" color="#ffffff" intensity="2" distance="10" position="0 3 3"></a-light>
 
-    <a-plane rotation="-90 0 0" width="20" height="20" color="#8B4513" static-body></a-plane>
-
-    <a-entity id="model" position="0 0 -3" scale="1 1 1" static-body></a-entity>
+    <a-plane rotation="-90 0 0" width="50" height="50" color="#8B4513" static-body></a-plane>
 
     <a-entity id="rig" position="0 1.6 3" dynamic-body="shape: capsule; mass: 1; linearDamping: 0.9">
       <a-camera look-controls wasd-controls-enabled="false" position="0 1.6 0"></a-camera>
@@ -127,7 +127,7 @@
   </a-scene>
 
   <script>
-    const initialPosition = { x: 0, y: 1.6, z: 3 };
+    let modelCount = 0;
 
     function move(direction) {
       const rig = document.querySelector('#rig');
@@ -171,7 +171,7 @@
 
     function resetCamera() {
       const rig = document.querySelector('#rig');
-      rig.setAttribute('position', initialPosition);
+      rig.setAttribute('position', { x: 0, y: 1.6, z: 3 });
     }
 
     function toggleLight(type) {
@@ -185,20 +185,34 @@
     }
 
     function loadCustomModel() {
+      const scene = document.querySelector('a-scene');
       const objInput = document.getElementById('obj-file');
       const mtlInput = document.getElementById('mtl-file');
-      if (!objInput.files[0] || !mtlInput.files[0]) {
-        alert('Please select both OBJ and MTL files.');
+      const gltfInput = document.getElementById('gltf-file');
+
+      const modelEntity = document.createElement('a-entity');
+      modelEntity.setAttribute('position', `${modelCount * 2} 0 -5`);
+      modelEntity.setAttribute('static-body', '');
+
+      if (gltfInput.files[0]) {
+        const gltfURL = URL.createObjectURL(gltfInput.files[0]);
+        modelEntity.setAttribute('gltf-model', gltfURL);
+        scene.appendChild(modelEntity);
+        modelCount++;
         return;
       }
 
-      const objURL = URL.createObjectURL(objInput.files[0]);
-      const mtlURL = URL.createObjectURL(mtlInput.files[0]);
+      if (objInput.files[0] && mtlInput.files[0]) {
+        const objURL = URL.createObjectURL(objInput.files[0]);
+        const mtlURL = URL.createObjectURL(mtlInput.files[0]);
+        modelEntity.setAttribute('obj-model', `obj: ${objURL}; mtl: ${mtlURL}`);
+        scene.appendChild(modelEntity);
+        modelCount++;
+        return;
+      }
 
-      const model = document.querySelector('#model');
-      model.setAttribute('obj-model', `obj: ${objURL}; mtl: ${mtlURL}`);
+      alert('Please select either GLTF/GLB or both OBJ and MTL files.');
     }
   </script>
 </body>
 </html>
-
