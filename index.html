@@ -3,39 +3,95 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OBJ Viewer with Collision and Controls</title>
+    <title>OBJ Viewer with On-Screen Controls</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <style>
+      .controls {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        display: grid;
+        grid-template-columns: 50px 50px 50px;
+        grid-template-rows: 50px 50px 50px;
+        gap: 5px;
+        z-index: 10;
+      }
+      .controls button {
+        background-color: #444;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        opacity: 0.8;
+      }
+      .controls button:hover {
+        opacity: 1;
+      }
+    </style>
   </head>
   <body>
-    <a-scene joystick-controls embedded physics="gravity: -9.8">
+    <!-- On-Screen Directional Buttons -->
+    <div class="controls">
+      <div></div>
+      <button onclick="move('forward')">↑</button>
+      <div></div>
+      <button onclick="move('left')">←</button>
+      <div></div>
+      <button onclick="move('right')">→</button>
+      <div></div>
+      <button onclick="move('backward')">↓</button>
+      <div></div>
+    </div>
+
+    <!-- A-Frame Scene -->
+    <a-scene physics="gravity: -9.8">
       <a-assets>
         <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
         <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
       </a-assets>
 
+      <!-- Lights -->
       <a-light type="ambient" color="#ffffff" intensity="1"></a-light>
       <a-light type="directional" color="#ffffff" intensity="3" position="2 4 3"></a-light>
       <a-light type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
 
-      <!-- Camera rig with joystick movement -->
-      <a-entity id="rig" movement-controls position="0 1.6 3">
-        <a-camera look-controls></a-camera>
+      <!-- Camera Rig -->
+      <a-entity id="rig" position="0 1.6 3">
+        <a-camera look-controls wasd-controls-enabled="false"></a-camera>
         <a-sphere radius="0.1" dynamic-body visible="false"></a-sphere>
       </a-entity>
 
+      <!-- Model -->
       <a-entity id="model"
                 obj-model="obj: #my-obj; mtl: #my-mtl"
                 position="0 0 -3"
                 scale="1 1 1"
                 static-body></a-entity>
 
+      <!-- Ground -->
       <a-plane rotation="-90 0 0"
                width="10"
                height="10"
                color="#8B4513"
                static-body></a-plane>
     </a-scene>
+
+    <!-- Movement Script -->
+    <script>
+      function move(direction) {
+        const rig = document.querySelector('#rig');
+        const step = 0.3;
+        const position = rig.getAttribute('position');
+
+        if (direction === 'forward') position.z -= step;
+        else if (direction === 'backward') position.z += step;
+        else if (direction === 'left') position.x -= step;
+        else if (direction === 'right') position.x += step;
+
+        rig.setAttribute('position', position);
+      }
+    </script>
   </body>
 </html>
