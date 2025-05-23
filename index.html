@@ -8,16 +8,12 @@
   <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; }
-    .controls, .vertical, .lights, .sliders, .reset {
+    .controls, .lights, .sliders, .reset {
       position: absolute; z-index: 999;
     }
     .controls {
       bottom: 20px; left: 20px;
       display: grid; grid-template-columns: repeat(3, 50px); gap: 5px;
-    }
-    .vertical {
-      bottom: 20px; left: 190px;
-      display: flex; flex-direction: column; gap: 5px;
     }
     .lights {
       top: 20px; right: 20px;
@@ -52,10 +48,6 @@
   <button onclick="move('backward-left')">↙</button>
   <button onclick="move('backward')">↓</button>
   <button onclick="move('backward-right')">↘</button>
-</div>
-<div class="vertical">
-  <button onclick="moveVertical('up')">↑ Up</button>
-  <button onclick="moveVertical('down')">↓ Down</button>
 </div>
 <div class="lights">
   <button onclick="toggleLight('ambient')">Ambient</button>
@@ -115,12 +107,6 @@
     rig.setAttribute('position', {x: pos.x + dx, y: pos.y + dy, z: pos.z + dz});
   }
 
-  function moveVertical(dir) {
-    const pos = rig.getAttribute('position');
-    const dy = dir === 'up' ? 0.3 : -0.3;
-    rig.setAttribute('position', {x: pos.x, y: pos.y + dy, z: pos.z});
-  }
-
   function jump() {
     if (bodyLoaded && rig.body.velocity.y < 0.1) {
       rig.body.applyImpulse({x: 0, y: 5, z: 0}, rig.body.position);
@@ -145,4 +131,5 @@
 
 </body>
 </html>
+
 
