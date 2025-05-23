@@ -1,158 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Camera Collision and Controls</title>
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    button {
-      width: 50px;
-      height: 50px;
-      background-color: #333;
-      color: white;
-      font-size: 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      opacity: 0.9;
-    }
-    button:hover { opacity: 1; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OBJ Viewer with Controls</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      button {
+        width: 50px;
+        height: 50px;
+        background-color: #333;
+        color: white;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        opacity: 0.9;
+      }
+      button:hover { opacity: 1; }
 
-    .controls, .vertical-controls, .lights {
-      position: absolute;
-      z-index: 1000;
-    }
+      .controls, .vertical-controls, .lights {
+        position: absolute;
+        z-index: 1000;
+      }
 
-    .controls {
-      bottom: 20px;
-      left: 20px;
-      display: grid;
-      grid-template-columns: repeat(3, 50px);
-      grid-template-rows: repeat(3, 50px);
-      gap: 5px;
-    }
+      .controls {
+        bottom: 20px;
+        left: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, 50px);
+        grid-template-rows: repeat(3, 50px);
+        gap: 5px;
+      }
 
-    .vertical-controls {
-      bottom: 20px;
-      left: 200px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
+      .vertical-controls {
+        bottom: 20px;
+        left: 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
 
-    .lights {
-      top: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-  </style>
-</head>
-<body>
+      .lights {
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.4);
+        border-radius: 10px;
+      }
 
-<!-- Directional Controls -->
-<div class="controls">
-  <button onclick="applyImpulse('forward-left')">↖</button>
-  <button onclick="applyImpulse('forward')">↑</button>
-  <button onclick="applyImpulse('forward-right')">↗</button>
-  <button onclick="applyImpulse('left')">←</button>
-  <button onclick="jump()">⤒</button>
-  <button onclick="applyImpulse('right')">→</button>
-  <button onclick="applyImpulse('backward-left')">↙</button>
-  <button onclick="applyImpulse('backward')">↓</button>
-  <button onclick="applyImpulse('backward-right')">↘</button>
-</div>
+      .lights button {
+        width: auto;
+        height: auto;
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
 
-<!-- Up/Down Controls -->
-<div class="vertical-controls">
-  <button onclick="applyImpulse('up')">⬆</button>
-  <button onclick="applyImpulse('down')">⬇</button>
-</div>
+    <!-- Movement Controls -->
+    <div class="controls">
+      <button onclick="move('forward-left')">↖</button>
+      <button onclick="move('forward')">↑</button>
+      <button onclick="move('forward-right')">↗</button>
+      <button onclick="move('left')">←</button>
+      <button onclick="jump()">⤒</button>
+      <button onclick="move('right')">→</button>
+      <button onclick="move('backward-left')">↙</button>
+      <button onclick="move('backward')">↓</button>
+      <button onclick="move('backward-right')">↘</button>
+    </div>
 
-<!-- Light Toggles -->
-<div class="lights">
-  <button onclick="toggleLight('ambient')">Toggle Ambient</button>
-  <button onclick="toggleLight('directional')">Toggle Directional</button>
-  <button onclick="toggleLight('point')">Toggle Point</button>
-</div>
+    <!-- Vertical Camera Controls -->
+    <div class="vertical-controls">
+      <button onclick="moveVertical('up')">↑ Y</button>
+      <button onclick="moveVertical('down')">↓ Y</button>
+    </div>
 
-<!-- Scene -->
-<a-scene physics="debug: true">
-  <a-assets>
-    <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
-    <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
-  </a-assets>
+    <!-- Light Toggle Controls -->
+    <div class="lights">
+      <button onclick="toggleLight('ambient')">Ambient Light</button>
+      <button onclick="toggleLight('directional')">Directional Light</button>
+      <button onclick="toggleLight('point')">Point Light</button>
+    </div>
 
-  <!-- Lights -->
-  <a-light id="ambientLight" type="ambient" color="#fff" intensity="1"></a-light>
-  <a-light id="directionalLight" type="directional" color="#fff" intensity="1.5" position="2 4 3"></a-light>
-  <a-light id="pointLight" type="point" color="#fff" intensity="1.5" position="0 3 3"></a-light>
+    <!-- A-Frame Scene -->
+    <a-scene physics="gravity: -9.8" embedded>
+      <a-assets>
+        <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
+        <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
+      </a-assets>
 
-  <!-- Ground -->
-  <a-plane rotation="-90 0 0" width="30" height="30" color="#8B4513" static-body></a-plane>
+      <!-- Lights -->
+      <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
+      <a-light id="directionalLight" type="directional" color="#ffffff" intensity="2" position="2 4 3"></a-light>
+      <a-light id="pointLight" type="point" color="#ffffff" intensity="2" distance="10" position="0 3 3"></a-light>
 
-  <!-- OBJ Model -->
-  <a-entity obj-model="obj: #my-obj; mtl: #my-mtl"
-            position="0 0 -3"
-            scale="1 1 1"
-            static-body></a-entity>
+      <!-- Camera Rig with Collision -->
+      <a-entity id="rig" position="0 1.6 3" dynamic-body="shape: sphere; mass: 1">
+        <a-camera look-controls wasd-controls-enabled="false"></a-camera>
+      </a-entity>
 
-  <!-- Camera Rig with Capsule Collider -->
-  <a-entity id="rig"
-            position="0 1.6 3"
-            dynamic-body="mass: 1; shape: sphere; sphereRadius: 0.5">
-    <a-camera look-controls wasd-controls-enabled="false"></a-camera>
-  </a-entity>
-</a-scene>
+      <!-- 3D Model with Collision -->
+      <a-entity id="model"
+                obj-model="obj: #my-obj; mtl: #my-mtl"
+                position="0 0 -3"
+                scale="1 1 1"
+                static-body></a-entity>
 
-<script>
-  function applyImpulse(direction) {
-    const rig = document.querySelector('#rig');
-    const body = rig.body;
-    const impulseStrength = 2;
+      <!-- Ground with Collision -->
+      <a-plane rotation="-90 0 0"
+               width="20"
+               height="20"
+               color="#8B4513"
+               static-body></a-plane>
+    </a-scene>
 
-    const dirMap = {
-      forward: [0, 0, -1],
-      backward: [0, 0, 1],
-      left: [-1, 0, 0],
-      right: [1, 0, 0],
-      'forward-left': [-1, 0, -1],
-      'forward-right': [1, 0, -1],
-      'backward-left': [-1, 0, 1],
-      'backward-right': [1, 0, 1],
-      up: [0, 1, 0],
-      down: [0, -1, 0]
-    };
+    <!-- Controls Script -->
+    <script>
+      function move(direction) {
+        const rig = document.querySelector('#rig');
+        const step = 0.3;
+        const pos = rig.getAttribute('position');
 
-    if (body && dirMap[direction]) {
-      const impulse = new CANNON.Vec3(...dirMap[direction]).scale(impulseStrength);
-      const worldPoint = new CANNON.Vec3().copy(body.position);
-      body.applyImpulse(impulse, worldPoint);
-    }
-  }
+        const directions = {
+          forward: [0, 0, -step],
+          backward: [0, 0, step],
+          left: [-step, 0, 0],
+          right: [step, 0, 0],
+          'forward-left': [-step, 0, -step],
+          'forward-right': [step, 0, -step],
+          'backward-left': [-step, 0, step],
+          'backward-right': [step, 0, step]
+        };
 
-  function jump() {
-    const rig = document.querySelector('#rig');
-    const body = rig.body;
-    if (body && Math.abs(body.velocity.y) < 0.1) {
-      body.applyImpulse(new CANNON.Vec3(0, 5, 0), body.position);
-    }
-  }
+        const [dx, dy, dz] = directions[direction];
+        rig.setAttribute('position', {
+          x: pos.x + dx,
+          y: pos.y + dy,
+          z: pos.z + dz
+        });
+      }
 
-  function toggleLight(type) {
-    const light = document.getElementById({
-      ambient: 'ambientLight',
-      directional: 'directionalLight',
-      point: 'pointLight'
-    }[type]);
-    light.setAttribute('visible', !light.getAttribute('visible'));
-  }
-</script>
+      function moveVertical(direction) {
+        const rig = document.querySelector('#rig');
+        const step = 0.3;
+        const pos = rig.getAttribute('position');
 
-</body>
+        if (direction === 'up') pos.y += step;
+        else if (direction === 'down') pos.y -= step;
+
+        rig.setAttribute('position', pos);
+      }
+
+      function jump() {
+        const rig = document.querySelector('#rig');
+        const body = rig.body;
+        if (body && Math.abs(body.velocity.y) < 0.1) {
+          body.velocity.set(body.velocity.x, 5, body.velocity.z);
+        }
+      }
+
+      function toggleLight(type) {
+        const idMap = {
+          ambient: 'ambientLight',
+          directional: 'directionalLight',
+          point: 'pointLight'
+        };
+        const light = document.getElementById(idMap[type]);
+        const isVisible = light.getAttribute('visible');
+        light.setAttribute('visible', !isVisible);
+      }
+    </script>
+  </body>
 </html>
+
 
