@@ -1,129 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Multi-Model 3D Viewer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced OBJ & GLTF Viewer</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
   <script src="https://unpkg.com/aframe-obj-loader-component@1.0.0/dist/aframe-obj-loader-component.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; }
-    .controls, .camera-controls, .lights, .reset, .upload-box {
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    .controls, .lights, .vertical, .model-loader {
       position: absolute;
       z-index: 1000;
     }
     .controls {
       bottom: 20px;
-      left: 20px;
+      left: 80px;
       display: grid;
       grid-template-columns: repeat(3, 50px);
       grid-template-rows: repeat(3, 50px);
       gap: 5px;
     }
-    .camera-controls {
-      bottom: 20px;
-      right: 100px;
+    .vertical {
+      bottom: 100px;
+      left: 10px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-    }
-    .reset {
-      bottom: 20px;
-      right: 170px;
     }
     .lights {
       top: 20px;
-      left: 20px;
+      right: 20px;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .upload-box {
+    .model-loader {
       top: 20px;
-      right: 20px;
-      background: rgba(255, 255, 255, 0.8);
+      left: 20px;
+      background: rgba(0,0,0,0.7);
       padding: 10px;
-      border-radius: 8px;
+      border-radius: 5px;
+      color: white;
     }
-    button, input {
+    button, input[type="file"] {
       background-color: #333;
       color: white;
       border: none;
       border-radius: 5px;
       font-size: 14px;
-      padding: 8px;
       cursor: pointer;
-      margin-bottom: 5px;
-    }
-    input[type="file"] {
-      background: transparent;
-      color: black;
+      opacity: 0.9;
     }
     button:hover {
-      opacity: 0.9;
+      opacity: 1;
     }
   </style>
 </head>
 <body>
-
-  <!-- Movement Controls -->
   <div class="controls">
-    <button onclick="move('forward-left')" title="Move forward and left">↖</button>
-    <button onclick="move('forward')" title="Move forward">↑</button>
-    <button onclick="move('forward-right')" title="Move forward and right">↗</button>
-    <button onclick="move('left')" title="Move left">←</button>
-    <button onclick="jump()" title="Jump up">⤒</button>
-    <button onclick="move('right')" title="Move right">→</button>
-    <button onclick="move('backward-left')" title="Move backward and left">↙</button>
-    <button onclick="move('backward')" title="Move backward">↓</button>
-    <button onclick="move('backward-right')" title="Move backward and right">↘</button>
+    <button title="Move Forward Left" onclick="move('forward-left')">↖</button>
+    <button title="Move Forward" onclick="move('forward')">↑</button>
+    <button title="Move Forward Right" onclick="move('forward-right')">↗</button>
+    <button title="Move Left" onclick="move('left')">←</button>
+    <button title="Reset Camera" onclick="resetPosition()">⭮</button>
+    <button title="Move Right" onclick="move('right')">→</button>
+    <button title="Move Backward Left" onclick="move('backward-left')">↙</button>
+    <button title="Move Backward" onclick="move('backward')">↓</button>
+    <button title="Move Backward Right" onclick="move('backward-right')">↘</button>
   </div>
 
-  <!-- Camera Controls -->
-  <div class="camera-controls">
-    <button onclick="moveVertical('up')" title="Move camera up">Cam ↑</button>
-    <button onclick="moveVertical('down')" title="Move camera down">Cam ↓</button>
+  <div class="vertical">
+    <button title="Move Up" onclick="moveVertical(1)">⬆</button>
+    <button title="Move Down" onclick="moveVertical(-1)">⬇</button>
   </div>
 
-  <!-- Reset Button -->
-  <div class="reset">
-    <button onclick="resetCamera()" title="Reset camera to start position">Reset</button>
-  </div>
-
-  <!-- Light Toggles -->
   <div class="lights">
-    <button onclick="toggleLight('ambient')" title="Toggle ambient light">Ambient</button>
-    <button onclick="toggleLight('directional')" title="Toggle directional light">Directional</button>
-    <button onclick="toggleLight('point')" title="Toggle point light">Point</button>
+    <button title="Toggle Ambient Light" onclick="toggleLight('ambient')">Ambient</button>
+    <button title="Toggle Directional Light" onclick="toggleLight('directional')">Directional</button>
+    <button title="Toggle Point Light" onclick="toggleLight('point')">Point</button>
   </div>
 
-  <!-- Upload Section -->
-  <div class="upload-box">
-    <label>Upload OBJ:</label><br>
-    <input type="file" id="obj-file" accept=".obj"><br>
-    <label>Upload MTL:</label><br>
-    <input type="file" id="mtl-file" accept=".mtl"><br>
-    <label>Upload GLTF/GLB:</label><br>
-    <input type="file" id="gltf-file" accept=".gltf,.glb"><br>
+  <div class="model-loader">
+    <label>OBJ:</label><input type="file" id="obj-file">
+    <label>MTL:</label><input type="file" id="mtl-file">
+    <label>GLTF:</label><input type="file" id="gltf-file">
     <button onclick="loadCustomModel()">Add Model</button>
   </div>
 
-  <!-- A-Frame Scene -->
   <a-scene physics="gravity: -9.8">
-    <a-assets id="assets"></a-assets>
+    <a-assets></a-assets>
 
     <a-sky color="#87CEEB"></a-sky>
 
     <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
     <a-light id="directionalLight" type="directional" color="#ffffff" intensity="2" position="2 4 3"></a-light>
-    <a-light id="pointLight" type="point" color="#ffffff" intensity="2" distance="10" position="0 3 3"></a-light>
+    <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
+
+    <a-entity id="rig" position="0 1.6 3" dynamic-body="mass:1;">
+      <a-camera look-controls wasd-controls-enabled="false"></a-camera>
+    </a-entity>
 
     <a-plane rotation="-90 0 0" width="50" height="50" color="#8B4513" static-body></a-plane>
-
-    <a-entity id="rig" position="0 1.6 3" dynamic-body="shape: capsule; mass: 1; linearDamping: 0.9">
-      <a-camera look-controls wasd-controls-enabled="false" position="0 1.6 0"></a-camera>
-    </a-entity>
   </a-scene>
 
   <script>
@@ -131,7 +112,7 @@
 
     function move(direction) {
       const rig = document.querySelector('#rig');
-      const step = 0.3;
+      const step = 0.5;
       const pos = rig.getAttribute('position');
       const directions = {
         forward: [0, 0, -step],
@@ -144,34 +125,17 @@
         'backward-right': [step, 0, step]
       };
       const [dx, dy, dz] = directions[direction];
-      rig.setAttribute('position', {
-        x: pos.x + dx,
-        y: pos.y + dy,
-        z: pos.z + dz
-      });
+      rig.setAttribute('position', {x: pos.x + dx, y: pos.y + dy, z: pos.z + dz});
     }
 
-    function moveVertical(dir) {
+    function moveVertical(direction) {
       const rig = document.querySelector('#rig');
-      const step = 0.3;
       const pos = rig.getAttribute('position');
-      rig.setAttribute('position', {
-        x: pos.x,
-        y: pos.y + (dir === 'up' ? step : -step),
-        z: pos.z
-      });
+      rig.setAttribute('position', {x: pos.x, y: pos.y + direction * 0.5, z: pos.z});
     }
 
-    function jump() {
-      const rig = document.querySelector('#rig');
-      if (rig.body && rig.body.velocity.y < 0.1) {
-        rig.body.velocity.y = 5;
-      }
-    }
-
-    function resetCamera() {
-      const rig = document.querySelector('#rig');
-      rig.setAttribute('position', { x: 0, y: 1.6, z: 3 });
+    function resetPosition() {
+      document.querySelector('#rig').setAttribute('position', '0 1.6 3');
     }
 
     function toggleLight(type) {
@@ -181,7 +145,8 @@
         point: 'pointLight'
       };
       const light = document.getElementById(idMap[type]);
-      light.setAttribute('visible', !light.getAttribute('visible'));
+      const isVisible = light.getAttribute('visible');
+      light.setAttribute('visible', !isVisible);
     }
 
     function loadCustomModel() {
@@ -194,25 +159,31 @@
       modelEntity.setAttribute('position', `${modelCount * 2} 0 -5`);
       modelEntity.setAttribute('static-body', '');
 
-      if (gltfInput.files[0]) {
+      if (gltfInput.files.length > 0) {
         const gltfURL = URL.createObjectURL(gltfInput.files[0]);
         modelEntity.setAttribute('gltf-model', gltfURL);
         scene.appendChild(modelEntity);
         modelCount++;
+        modelEntity.addEventListener('model-loaded', () => URL.revokeObjectURL(gltfURL));
         return;
       }
 
-      if (objInput.files[0] && mtlInput.files[0]) {
+      if (objInput.files.length > 0 && mtlInput.files.length > 0) {
         const objURL = URL.createObjectURL(objInput.files[0]);
         const mtlURL = URL.createObjectURL(mtlInput.files[0]);
         modelEntity.setAttribute('obj-model', `obj: ${objURL}; mtl: ${mtlURL}`);
         scene.appendChild(modelEntity);
         modelCount++;
+        modelEntity.addEventListener('model-loaded', () => {
+          URL.revokeObjectURL(objURL);
+          URL.revokeObjectURL(mtlURL);
+        });
         return;
       }
 
-      alert('Please select either GLTF/GLB or both OBJ and MTL files.');
+      alert('Please select either a GLTF/GLB file or both OBJ and MTL files.');
     }
   </script>
 </body>
 </html>
+
