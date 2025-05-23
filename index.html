@@ -13,8 +13,8 @@
       }
 
       .controls,
-      .camera-controls,
-      .lights {
+      .lights,
+      .camera-controls {
         position: absolute;
         z-index: 1000;
       }
@@ -28,16 +28,16 @@
         gap: 5px;
       }
 
-      .camera-controls {
-        bottom: 20px;
-        right: 20px;
+      .lights {
+        top: 20px;
+        left: 20px;
         display: flex;
         flex-direction: column;
         gap: 10px;
       }
 
-      .lights {
-        top: 20px;
+      .camera-controls {
+        top: 150px;
         left: 20px;
         display: flex;
         flex-direction: column;
@@ -75,17 +75,17 @@
       <button onclick="move('backward-right')">↘</button>
     </div>
 
-    <!-- Camera Up/Down Controls -->
-    <div class="camera-controls">
-      <button onclick="moveVertical('up')">Cam ↑</button>
-      <button onclick="moveVertical('down')">Cam ↓</button>
-    </div>
-
     <!-- Light Toggle Controls -->
     <div class="lights">
       <button onclick="toggleLight('ambient')">Toggle Ambient</button>
       <button onclick="toggleLight('directional')">Toggle Directional</button>
       <button onclick="toggleLight('point')">Toggle Point</button>
+    </div>
+
+    <!-- Camera Up/Down Controls -->
+    <div class="camera-controls">
+      <button onclick="moveVertical('up')">Cam ↑</button>
+      <button onclick="moveVertical('down')">Cam ↓</button>
     </div>
 
     <!-- A-Frame Scene -->
@@ -179,3 +179,4 @@
     </script>
   </body>
 </html>
+
