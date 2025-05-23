@@ -1,189 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced OBJ & GLTF Viewer</title>
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
-  <script src="https://unpkg.com/aframe-obj-loader-component@1.0.0/dist/aframe-obj-loader-component.min.js"></script>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-    .controls, .lights, .vertical, .model-loader {
-      position: absolute;
-      z-index: 1000;
-    }
-    .controls {
-      bottom: 20px;
-      left: 80px;
-      display: grid;
-      grid-template-columns: repeat(3, 50px);
-      grid-template-rows: repeat(3, 50px);
-      gap: 5px;
-    }
-    .vertical {
-      bottom: 100px;
-      left: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .lights {
-      top: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .model-loader {
-      top: 20px;
-      left: 20px;
-      background: rgba(0,0,0,0.7);
-      padding: 10px;
-      border-radius: 5px;
-      color: white;
-    }
-    button, input[type="file"] {
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 14px;
-      cursor: pointer;
-      opacity: 0.9;
-    }
-    button:hover {
-      opacity: 1;
-    }
-  </style>
-</head>
-<body>
-  <div class="controls">
-    <button title="Move Forward Left" onclick="move('forward-left')">↖</button>
-    <button title="Move Forward" onclick="move('forward')">↑</button>
-    <button title="Move Forward Right" onclick="move('forward-right')">↗</button>
-    <button title="Move Left" onclick="move('left')">←</button>
-    <button title="Reset Camera" onclick="resetPosition()">⭮</button>
-    <button title="Move Right" onclick="move('right')">→</button>
-    <button title="Move Backward Left" onclick="move('backward-left')">↙</button>
-    <button title="Move Backward" onclick="move('backward')">↓</button>
-    <button title="Move Backward Right" onclick="move('backward-right')">↘</button>
-  </div>
-
-  <div class="vertical">
-    <button title="Move Up" onclick="moveVertical(1)">⬆</button>
-    <button title="Move Down" onclick="moveVertical(-1)">⬇</button>
-  </div>
-
-  <div class="lights">
-    <button title="Toggle Ambient Light" onclick="toggleLight('ambient')">Ambient</button>
-    <button title="Toggle Directional Light" onclick="toggleLight('directional')">Directional</button>
-    <button title="Toggle Point Light" onclick="toggleLight('point')">Point</button>
-  </div>
-
-  <div class="model-loader">
-    <label>OBJ:</label><input type="file" id="obj-file">
-    <label>MTL:</label><input type="file" id="mtl-file">
-    <label>GLTF:</label><input type="file" id="gltf-file">
-    <button onclick="loadCustomModel()">Add Model</button>
-  </div>
-
-  <a-scene physics="gravity: -9.8">
-    <a-assets></a-assets>
-
-    <a-sky color="#87CEEB"></a-sky>
-
-    <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
-    <a-light id="directionalLight" type="directional" color="#ffffff" intensity="2" position="2 4 3"></a-light>
-    <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
-
-    <a-entity id="rig" position="0 1.6 3" dynamic-body="mass:1;">
-      <a-camera look-controls wasd-controls-enabled="false"></a-camera>
-    </a-entity>
-
-    <a-plane rotation="-90 0 0" width="50" height="50" color="#8B4513" static-body></a-plane>
-  </a-scene>
-
-  <script>
-    let modelCount = 0;
-
-    function move(direction) {
-      const rig = document.querySelector('#rig');
-      const step = 0.5;
-      const pos = rig.getAttribute('position');
-      const directions = {
-        forward: [0, 0, -step],
-        backward: [0, 0, step],
-        left: [-step, 0, 0],
-        right: [step, 0, 0],
-        'forward-left': [-step, 0, -step],
-        'forward-right': [step, 0, -step],
-        'backward-left': [-step, 0, step],
-        'backward-right': [step, 0, step]
-      };
-      const [dx, dy, dz] = directions[direction];
-      rig.setAttribute('position', {x: pos.x + dx, y: pos.y + dy, z: pos.z + dz});
-    }
-
-    function moveVertical(direction) {
-      const rig = document.querySelector('#rig');
-      const pos = rig.getAttribute('position');
-      rig.setAttribute('position', {x: pos.x, y: pos.y + direction * 0.5, z: pos.z});
-    }
-
-    function resetPosition() {
-      document.querySelector('#rig').setAttribute('position', '0 1.6 3');
-    }
-
-    function toggleLight(type) {
-      const idMap = {
-        ambient: 'ambientLight',
-        directional: 'directionalLight',
-        point: 'pointLight'
-      };
-      const light = document.getElementById(idMap[type]);
-      const isVisible = light.getAttribute('visible');
-      light.setAttribute('visible', !isVisible);
-    }
-
-    function loadCustomModel() {
-      const scene = document.querySelector('a-scene');
-      const objInput = document.getElementById('obj-file');
-      const mtlInput = document.getElementById('mtl-file');
-      const gltfInput = document.getElementById('gltf-file');
-
-      const modelEntity = document.createElement('a-entity');
-      modelEntity.setAttribute('position', `${modelCount * 2} 0 -5`);
-      modelEntity.setAttribute('static-body', '');
-
-      if (gltfInput.files.length > 0) {
-        const gltfURL = URL.createObjectURL(gltfInput.files[0]);
-        modelEntity.setAttribute('gltf-model', gltfURL);
-        scene.appendChild(modelEntity);
-        modelCount++;
-        modelEntity.addEventListener('model-loaded', () => URL.revokeObjectURL(gltfURL));
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OBJ Viewer with Controls</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
       }
 
-      if (objInput.files.length > 0 && mtlInput.files.length > 0) {
-        const objURL = URL.createObjectURL(objInput.files[0]);
-        const mtlURL = URL.createObjectURL(mtlInput.files[0]);
-        modelEntity.setAttribute('obj-model', `obj: ${objURL}; mtl: ${mtlURL}`);
-        scene.appendChild(modelEntity);
-        modelCount++;
-        modelEntity.addEventListener('model-loaded', () => {
-          URL.revokeObjectURL(objURL);
-          URL.revokeObjectURL(mtlURL);
-        });
-        return;
+      .controls, .lights, .vertical {
+        position: absolute;
+        z-index: 1000;
       }
 
-      alert('Please select either a GLTF/GLB file or both OBJ and MTL files.');
-    }
-  </script>
-</body>
+      .controls {
+        bottom: 20px;
+        left: 90px;
+        display: grid;
+        grid-template-columns: repeat(3, 50px);
+        grid-template-rows: repeat(3, 50px);
+        gap: 5px;
+      }
+
+      .vertical {
+        bottom: 70px;
+        left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .lights {
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .reset {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+      }
+
+      button {
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.85;
+      }
+
+      button:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Movement Controls -->
+    <div class="controls">
+      <button title="Move Forward Left" onclick="move('forward-left')">↖</button>
+      <button title="Move Forward" onclick="move('forward')">↑</button>
+      <button title="Move Forward Right" onclick="move('forward-right')">↗</button>
+      <button title="Move Left" onclick="move('left')">←</button>
+      <button title="Jump" onclick="jump()">⤒</button>
+      <button title="Move Right" onclick="move('right')">→</button>
+      <button title="Move Backward Left" onclick="move('backward-left')">↙</button>
+      <button title="Move Backward" onclick="move('backward')">↓</button>
+      <button title="Move Backward Right" onclick="move('backward-right')">↘</button>
+    </div>
+
+    <!-- Vertical Camera Movement -->
+    <div class="vertical">
+      <button title="Move Camera Up" onclick="moveVertical(0.3)">↑</button>
+      <button title="Move Camera Down" onclick="moveVertical(-0.3)">↓</button>
+    </div>
+
+    <!-- Reset Button -->
+    <div class="reset">
+      <button title="Reset Camera Position" onclick="resetCamera()">⟳</button>
+    </div>
+
+    <!-- Light Controls -->
+    <div class="lights">
+      <button title="Toggle Ambient Light" onclick="toggleLight('ambient')">Toggle Ambient</button>
+      <button title="Toggle Directional Light" onclick="toggleLight('directional')">Toggle Directional</button>
+      <button title="Toggle Point Light" onclick="toggleLight('point')">Toggle Point</button>
+    </div>
+
+    <!-- A-Frame Scene -->
+    <a-scene physics="gravity: -9.8">
+      <a-assets>
+        <a-asset-item id="my-obj" src="test.obj"></a-asset-item>
+        <a-asset-item id="my-mtl" src="test.mtl"></a-asset-item>
+      </a-assets>
+
+      <!-- Sky -->
+      <a-sky color="#87CEEB"></a-sky>
+
+      <!-- Lights -->
+      <a-light id="ambientLight" type="ambient" color="#ffffff" intensity="1"></a-light>
+      <a-light id="directionalLight" type="directional" color="#ffffff" intensity="3" position="2 4 3"></a-light>
+      <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
+
+      <!-- Camera Rig -->
+      <a-entity id="rig" position="0 1.6 3" dynamic-body>
+        <a-camera look-controls wasd-controls-enabled="false"></a-camera>
+      </a-entity>
+
+      <!-- 3D Model -->
+      <a-entity id="model"
+                obj-model="obj: #my-obj; mtl: #my-mtl"
+                position="0 0 -3"
+                scale="1 1 1"
+                static-body></a-entity>
+
+      <!-- Ground -->
+      <a-plane rotation="-90 0 0"
+               width="20"
+               height="20"
+               color="#8B4513"
+               static-body></a-plane>
+    </a-scene>
+
+    <!-- Script -->
+    <script>
+      function move(direction) {
+        const rig = document.querySelector('#rig');
+        const step = 0.3;
+        const pos = rig.getAttribute('position');
+
+        const directions = {
+          forward: [0, 0, -step],
+          backward: [0, 0, step],
+          left: [-step, 0, 0],
+          right: [step, 0, 0],
+          'forward-left': [-step, 0, -step],
+          'forward-right': [step, 0, -step],
+          'backward-left': [-step, 0, step],
+          'backward-right': [step, 0, step]
+        };
+
+        const [dx, dy, dz] = directions[direction];
+        pos.x += dx;
+        pos.y += dy;
+        pos.z += dz;
+
+        rig.setAttribute('position', pos);
+      }
+
+      function moveVertical(amount) {
+        const rig = document.querySelector('#rig');
+        const pos = rig.getAttribute('position');
+        pos.y += amount;
+        rig.setAttribute('position', pos);
+      }
+
+      function jump() {
+        const rig = document.querySelector('#rig');
+        if (rig.body && rig.body.velocity.y < 0.1) {
+          rig.body.velocity.y = 5;
+        }
+      }
+
+      function resetCamera() {
+        const rig = document.querySelector('#rig');
+        rig.setAttribute('position', { x: 0, y: 1.6, z: 3 });
+        if (rig.body) {
+          rig.body.velocity.set(0, 0, 0);
+        }
+      }
+
+      function toggleLight(type) {
+        const idMap = {
+          ambient: 'ambientLight',
+          directional: 'directionalLight',
+          point: 'pointLight'
+        };
+        const light = document.getElementById(idMap[type]);
+        const isVisible = light.getAttribute('visible');
+        light.setAttribute('visible', !isVisible);
+      }
+    </script>
+  </body>
 </html>
+
 
