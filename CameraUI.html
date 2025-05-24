@@ -94,7 +94,6 @@
         <button onclick="saveCamera()">Save Preset</button>
         <select id="presetList"></select>
         <button onclick="restoreSelectedPreset()">Restore Preset</button>
-        <button onclick="deleteSelectedPreset()">Delete Preset</button>
       </div>
     </div>
 
@@ -124,10 +123,11 @@
           const dir = new THREE.Vector3();
           cameraRig.object3D.getWorldDirection(dir);
 
-          cameraDataDiv.innerHTML =
-            Position: X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}<br> +
-            Rotation: X: ${(rot.x * 180 / Math.PI).toFixed(2)} Y: ${(rot.y * 180 / Math.PI).toFixed(2)} Z: ${(rot.z * 180 / Math.PI).toFixed(2)}<br> +
-            Direction: X: ${dir.x.toFixed(2)} Y: ${dir.y.toFixed(2)} Z: ${dir.z.toFixed(2)};
+          cameraDataDiv.innerHTML = `
+            Position: X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}<br>
+            Rotation: X: ${(rot.x * 180 / Math.PI).toFixed(2)} Y: ${(rot.y * 180 / Math.PI).toFixed(2)} Z: ${(rot.z * 180 / Math.PI).toFixed(2)}<br>
+            Direction: X: ${dir.x.toFixed(2)} Y: ${dir.y.toFixed(2)} Z: ${dir.z.toFixed(2)}
+          `;
         }
       });
 
@@ -142,7 +142,7 @@
         };
         cameraRig.setAttribute('animation__move', {
           property: 'position',
-          to: ${newPos.x} ${newPos.y} ${newPos.z},
+          to: `${newPos.x} ${newPos.y} ${newPos.z}`,
           dur: 300,
           easing: 'easeOutQuad'
         });
@@ -157,7 +157,7 @@
         };
         cameraRig.setAttribute('animation__rotate', {
           property: 'rotation',
-          to: ${newRot.x} ${newRot.y} ${newRot.z},
+          to: `${newRot.x} ${newRot.y} ${newRot.z}`,
           dur: 300,
           easing: 'easeOutQuad'
         });
@@ -174,7 +174,7 @@
         };
         cameraRig.setAttribute('animation__zoom', {
           property: 'position',
-          to: ${newPos.x} ${newPos.y} ${newPos.z},
+          to: `${newPos.x} ${newPos.y} ${newPos.z}`,
           dur: 300,
           easing: 'easeOutCubic'
         });
@@ -217,28 +217,19 @@
         const r = presets[name].rotation;
         cameraRig.setAttribute('animation__move', {
           property: 'position',
-          to: ${p.x} ${p.y} ${p.z},
+          to: `${p.x} ${p.y} ${p.z}`,
           dur: 400,
           easing: 'easeOutQuad'
         });
         cameraRig.setAttribute('animation__rotate', {
           property: 'rotation',
-          to: ${r.x} ${r.y} ${r.z},
+          to: `${r.x} ${r.y} ${r.z}`,
           dur: 400,
           easing: 'easeOutQuad'
         });
       }
-
-      function deleteSelectedPreset() {
-        const name = presetList.value;
-        if (!presets[name]) return alert("Preset not found!");
-        delete presets[name];
-        const options = Array.from(presetList.options);
-        const index = options.findIndex(opt => opt.value === name);
-        if (index !== -1) presetList.remove(index);
-        alert("Deleted preset: " + name);
-      }
     </script>
   </body>
 </html>
+
 
