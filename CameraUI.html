@@ -7,16 +7,31 @@
         overflow: hidden;
         font-family: monospace;
       }
-      #camera-data {
+
+      #camera-data, #message {
         position: absolute;
+        z-index: 9999;
+        color: white;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        pointer-events: none;
+      }
+
+      #camera-data {
         top: 10px;
         left: 10px;
-        color: white;
-        background: rgba(0, 0, 0, 0.6);
-        padding: 10px;
-        z-index: 10;
         line-height: 1.5em;
       }
+
+      #message {
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none;
+        font-size: 18px;
+      }
+
       .control-panel {
         position: absolute;
         bottom: 10px;
@@ -28,21 +43,24 @@
         z-index: 10;
         align-items: center;
       }
+
       .button-group {
         display: flex;
         gap: 5px;
         flex-wrap: wrap;
         justify-content: center;
       }
+
       button, select, input {
         padding: 6px;
         font-size: 12px;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         border: none;
         cursor: pointer;
         min-width: 60px;
       }
+
       .preset-panel {
         display: flex;
         gap: 5px;
@@ -53,9 +71,9 @@
   </head>
   <body>
     <div id="camera-data"></div>
+    <div id="message"></div>
 
     <div class="control-panel">
-      <!-- Movement -->
       <div class="button-group">
         <button onclick="moveCamera(-1, 0, -1)">↖</button>
         <button onclick="moveCamera(0, 0, -1)">↑</button>
@@ -68,13 +86,11 @@
         <button onclick="moveCamera(1, 0, 1)">↘</button>
       </div>
 
-      <!-- Vertical Move -->
       <div class="button-group">
         <button onclick="moveCamera(0, 1, 0)">↑ Y</button>
         <button onclick="moveCamera(0, -1, 0)">↓ Y</button>
       </div>
 
-      <!-- Rotation -->
       <div class="button-group">
         <button onclick="rotateCamera(0, -10, 0)">Yaw ←</button>
         <button onclick="rotateCamera(0, 10, 0)">Yaw →</button>
@@ -82,28 +98,27 @@
         <button onclick="rotateCamera(10, 0, 0)">Pitch ↓</button>
       </div>
 
-      <!-- Zoom -->
       <div class="button-group">
         <button onclick="zoomCamera(-1)">Zoom In</button>
         <button onclick="zoomCamera(1)">Zoom Out</button>
       </div>
 
-      <!-- Preset GUI -->
       <div class="preset-panel">
         <input type="text" id="presetName" placeholder="Preset name" />
         <button onclick="saveCamera()">Save Preset</button>
         <select id="presetList"></select>
         <button onclick="restoreSelectedPreset()">Restore Preset</button>
+        <button onclick="deleteSelectedPreset()">Delete Preset</button>
       </div>
     </div>
 
-    <a-scene>
+    <a-scene cursor="rayOrigin: mouse" raycaster="objects: .clickable">
       <a-entity id="cameraRig" position="0 1.6 0" rotation="0 0 0">
         <a-camera wasd-controls look-controls></a-camera>
       </a-entity>
 
-      <a-box position="0 0.5 -3" color="#4CC3D9"></a-box>
-      <a-sphere position="2 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
+      <a-box class="clickable" position="0 0.5 -3" color="#4CC3D9"></a-box>
+      <a-sphere id="sphere" class="clickable" position="2 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
       <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
@@ -113,8 +128,10 @@
       const cameraDataDiv = document.getElementById('camera-data');
       const presetInput = document.getElementById('presetName');
       const presetList = document.getElementById('presetList');
+      const message = document.getElementById('message');
       const moveSpeed = 0.5;
-      const presets = {};
+
+      let presets = JSON.parse(localStorage.getItem('cameraPresets') || '{}');
 
       AFRAME.registerComponent('update-camera-data', {
         tick: function () {
@@ -123,15 +140,21 @@
           const dir = new THREE.Vector3();
           cameraRig.object3D.getWorldDirection(dir);
 
-          cameraDataDiv.innerHTML = `
-            Position: X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}<br>
-            Rotation: X: ${(rot.x * 180 / Math.PI).toFixed(2)} Y: ${(rot.y * 180 / Math.PI).toFixed(2)} Z: ${(rot.z * 180 / Math.PI).toFixed(2)}<br>
-            Direction: X: ${dir.x.toFixed(2)} Y: ${dir.y.toFixed(2)} Z: ${dir.z.toFixed(2)}
-          `;
+          cameraDataDiv.innerHTML =
+            `Position: X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}<br>` +
+            `Rotation: X: ${(rot.x * 180 / Math.PI).toFixed(2)} Y: ${(rot.y * 180 / Math.PI).toFixed(2)} Z: ${(rot.z * 180 / Math.PI).toFixed(2)}<br>` +
+            `Direction: X: ${dir.x.toFixed(2)} Y: ${dir.y.toFixed(2)} Z: ${dir.z.toFixed(2)}`;
         }
       });
 
       cameraRig.setAttribute('update-camera-data', '');
+
+      Object.keys(presets).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.text = name;
+        presetList.appendChild(option);
+      });
 
       function moveCamera(x, y, z) {
         const pos = cameraRig.getAttribute('position');
@@ -207,6 +230,7 @@
         option.text = name;
         presetList.appendChild(option);
         presetInput.value = '';
+        localStorage.setItem('cameraPresets', JSON.stringify(presets));
         alert("Preset saved: " + name);
       }
 
@@ -228,8 +252,41 @@
           easing: 'easeOutQuad'
         });
       }
+
+      function deleteSelectedPreset() {
+        const name = presetList.value;
+        if (!presets[name]) return alert("Preset not found!");
+        delete presets[name];
+        const options = Array.from(presetList.options);
+        const index = options.findIndex(opt => opt.value === name);
+        if (index !== -1) presetList.remove(index);
+        localStorage.setItem('cameraPresets', JSON.stringify(presets));
+        alert("Deleted preset: " + name);
+      }
+
+      document.querySelector('a-scene').addEventListener('click', (evt) => {
+        const clickedEl = evt.target;
+        if (!clickedEl.classList.contains('clickable')) return;
+
+        const object3D = clickedEl.object3D;
+        const worldPos = new THREE.Vector3();
+        object3D.getWorldPosition(worldPos);
+
+        cameraRig.setAttribute('animation__move', {
+          property: 'position',
+          to: `${worldPos.x} ${worldPos.y + 1.6} ${worldPos.z + 3}`,
+          dur: 800,
+          easing: 'easeOutCubic'
+        });
+
+        if (clickedEl.id === 'sphere') {
+          message.textContent = "Confirmed";
+          message.style.display = 'block';
+          setTimeout(() => {
+            message.style.display = 'none';
+          }, 2000);
+        }
+      });
     </script>
   </body>
 </html>
-
-
