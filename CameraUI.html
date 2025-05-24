@@ -7,333 +7,51 @@
         overflow: hidden;
         font-family: monospace;
       }
-      #camera-data {
+      #message {
         position: absolute;
         top: 10px;
-        left: 10px;
-        color: white;
-        background: rgba(0, 0, 0, 0.6);
-        padding: 10px;
-        z-index: 10;
-        line-height: 1.5em;
-      }
-      .control-panel {
-        position: absolute;
-        bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 10;
-        align-items: center;
-      }
-      .button-group {
-        display: flex;
-        gap: 5px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      button, select, input {
-        padding: 6px;
-        font-size: 12px;
-        background: rgba(0,0,0,0.7);
         color: white;
-        border: none;
-        cursor: pointer;
-        min-width: 60px;
-      }
-      .preset-panel {
-        display: flex;
-        gap: 5px;
-        justify-content: center;
-        flex-wrap: wrap;
+        background: rgba(0,0,0,0.7);
+        padding: 10px 20px;
+        font-size: 20px;
+        border-radius: 5px;
+        z-index: 1000;
+        display: none;
       }
     </style>
   </head>
   <body>
-    <div id="camera-data"></div>
+    <div id="message"></div>
 
-    <div class="control-panel">
-      <!-- Movement -->
-      <div class="button-group">
-        <button onclick="moveCamera(-1, 0, -1)">↖</button>
-        <button onclick="moveCamera(0, 0, -1)">↑</button>
-        <button onclick="moveCamera(1, 0, -1)">↗</button>
-        <button onclick="moveCamera(-1, 0, 0)">←</button>
-        <button onclick="resetCamera()">⭯</button>
-        <button onclick="moveCamera(1, 0, 0)">→</button>
-        <button onclick="moveCamera(-1, 0, 1)">↙</button>
-        <button onclick="moveCamera(0, 0, 1)">↓</button>
-        <button onclick="moveCamera(1, 0, 1)">↘</button>
-      </div>
-
-      <!-- Vertical Move -->
-      <div class="button-group">
-        <button onclick="moveCamera(0, 1, 0)">↑ Y</button>
-        <button onclick="moveCamera(0, -1, 0)">↓ Y</button>
-      </div>
-
-      <!-- Rotation -->
-      <div class="button-group">
-        <button onclick="rotateCamera(0, -10, 0)">Yaw ←</button>
-        <button onclick="rotateCamera(0, 10, 0)">Yaw →</button>
-        <button onclick="rotateCamera(-10, 0, 0)">Pitch ↑</button>
-        <button onclick="rotateCamera(10, 0, 0)">Pitch ↓</button>
-      </div>
-
-      <!-- Zoom -->
-      <div class="button-group">
-        <button onclick="zoomCamera(-1)">Zoom In</button>
-        <button onclick="zoomCamera(1)">Zoom Out</button>
-      </div>
-
-      <!-- Preset GUI -->
-      <div class="preset-panel">
-        <input type="text" id="presetName" placeholder="Preset name" />
-        <button onclick="saveCamera()">Save Preset</button>
-        <select id="presetList"></select>
-        <button onclick="restoreSelectedPreset()">Restore Preset</button>
-        <button onclick="deleteSelectedPreset()">Delete Preset</button>
-      </div>
-    </div>
-
-    <a-scene embedded>
-      <a-entity id="cameraRig" position="0 1.6 0" rotation="0 0 0">
-        <a-camera wasd-controls look-controls></a-camera>
-      </a-entity>
-
-      <a-box position="0 0.5 -3" color="#4CC3D9" class="clickable"></a-box>
-      <a-sphere position="2 1.25 -5" radius="1.25" color="#EF2D5E" class="clickable"></a-sphere>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4" class="clickable"></a-plane>
+    <a-scene>
+      <a-box position="0 0.5 -3" color="#4CC3D9" class="clickable" id="box"></a-box>
+      <a-sphere position="2 1.25 -5" radius="1.25" color="#EF2D5E" class="clickable" id="sphere"></a-sphere>
+      <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4" class="clickable" id="plane"></a-plane>
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
 
     <script>
-      const cameraRig = document.getElementById('cameraRig');
-      const cameraDataDiv = document.getElementById('camera-data');
-      const presetInput = document.getElementById('presetName');
-      const presetList = document.getElementById('presetList');
-      const moveSpeed = 0.5;
-      const presets = {};
+      const message = document.getElementById('message');
 
-      // Load presets from localStorage
-      function loadPresetsFromStorage() {
-        const stored = localStorage.getItem('cameraPresets');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            Object.assign(presets, parsed);
-          } catch (e) {
-            console.warn('Failed to parse presets from storage:', e);
-          }
-        }
-      }
-
-      // Save presets to localStorage
-      function savePresetsToStorage() {
-        localStorage.setItem('cameraPresets', JSON.stringify(presets));
-      }
-
-      // Refresh preset dropdown list
-      function refreshPresetList() {
-        presetList.innerHTML = '';
-        Object.keys(presets).forEach(name => {
-          const option = document.createElement('option');
-          option.value = name;
-          option.text = name;
-          presetList.appendChild(option);
-        });
-      }
-
-      // Remove an animation attribute (to reset it)
-      function removeAnimation(name) {
-        if (cameraRig.hasAttribute(name)) {
-          cameraRig.removeAttribute(name);
-        }
-      }
-
-      AFRAME.registerComponent('update-camera-data', {
-        tick: function () {
-          const pos = cameraRig.object3D.position;
-          const rot = cameraRig.object3D.rotation;
-          const dir = new THREE.Vector3();
-          cameraRig.object3D.getWorldDirection(dir);
-
-          cameraDataDiv.innerHTML =
-            `Position: X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}<br>` +
-            `Rotation: X: ${(rot.x * 180 / Math.PI).toFixed(2)} Y: ${(rot.y * 180 / Math.PI).toFixed(2)} Z: ${(rot.z * 180 / Math.PI).toFixed(2)}<br>` +
-            `Direction: X: ${dir.x.toFixed(2)} Y: ${dir.y.toFixed(2)} Z: ${dir.z.toFixed(2)}`;
-        }
-      });
-
-      cameraRig.setAttribute('update-camera-data', '');
-
-      function moveCamera(x, y, z) {
-        const pos = cameraRig.getAttribute('position');
-        const newPos = {
-          x: pos.x + x * moveSpeed,
-          y: pos.y + y * moveSpeed,
-          z: pos.z + z * moveSpeed
-        };
-        cameraRig.setAttribute('animation__move', {
-          property: 'position',
-          to: `${newPos.x} ${newPos.y} ${newPos.z}`,
-          dur: 300,
-          easing: 'easeOutQuad'
-        });
-      }
-
-      function rotateCamera(rx, ry, rz) {
-        const rot = cameraRig.getAttribute('rotation');
-        const newRot = {
-          x: rot.x + rx,
-          y: rot.y + ry,
-          z: rot.z + rz
-        };
-        cameraRig.setAttribute('animation__rotate', {
-          property: 'rotation',
-          to: `${newRot.x} ${newRot.y} ${newRot.z}`,
-          dur: 300,
-          easing: 'easeOutQuad'
-        });
-      }
-
-      function zoomCamera(direction) {
-        const dirVec = new THREE.Vector3();
-        cameraRig.object3D.getWorldDirection(dirVec);
-        const pos = cameraRig.getAttribute('position');
-        const newPos = {
-          x: pos.x + dirVec.x * moveSpeed * direction,
-          y: pos.y + dirVec.y * moveSpeed * direction,
-          z: pos.z + dirVec.z * moveSpeed * direction
-        };
-        cameraRig.setAttribute('animation__zoom', {
-          property: 'position',
-          to: `${newPos.x} ${newPos.y} ${newPos.z}`,
-          dur: 300,
-          easing: 'easeOutCubic'
-        });
-      }
-
-      function resetCamera() {
-        cameraRig.setAttribute('animation__move', {
-          property: 'position',
-          to: `0 1.6 0`,
-          dur: 500,
-          easing: 'easeInOutQuad'
-        });
-        cameraRig.setAttribute('animation__rotate', {
-          property: 'rotation',
-          to: `0 0 0`,
-          dur: 500,
-          easing: 'easeInOutQuad'
-        });
-      }
-
-      function saveCamera() {
-        const name = presetInput.value.trim();
-        if (!name) {
-          alert('Please enter a preset name');
-          return;
-        }
-
-        presets[name] = {
-          position: { ...cameraRig.getAttribute('position') },
-          rotation: { ...cameraRig.getAttribute('rotation') }
-        };
-        savePresetsToStorage();
-        refreshPresetList();
-        presetList.value = name;
-        presetInput.value = '';
-        alert(`Preset saved: ${name}`);
-      }
-
-      function restoreSelectedPreset() {
-        const name = presetList.value;
-        if (!presets[name]) {
-          alert('Please select a valid preset');
-          return;
-        }
-        const p = presets[name];
-        removeAnimation('animation__move');
-        removeAnimation('animation__rotate');
-        cameraRig.setAttribute('animation__move', {
-          property: 'position',
-          to: `${p.position.x} ${p.position.y} ${p.position.z}`,
-          dur: 600,
-          easing: 'easeInOutQuad'
-        });
-        cameraRig.setAttribute('animation__rotate', {
-          property: 'rotation',
-          to: `${p.rotation.x} ${p.rotation.y} ${p.rotation.z}`,
-          dur: 600,
-          easing: 'easeInOutQuad'
-        });
-      }
-
-      function deleteSelectedPreset() {
-        const name = presetList.value;
-        if (!presets[name]) {
-          alert('Please select a valid preset');
-          return;
-        }
-        if (!confirm(`Delete preset "${name}"?`)) return;
-
-        delete presets[name];
-        savePresetsToStorage();
-        refreshPresetList();
-        alert(`Preset deleted: ${name}`);
-      }
-
-      // Click-to-zoom feature
-      document.querySelector('a-scene').addEventListener('click', function(evt) {
+      document.querySelector('a-scene').addEventListener('click', function (evt) {
         const clickedEl = evt.target;
-        // Only trigger on our clickable objects
+
         if (!clickedEl.classList.contains('clickable')) return;
 
-        const objPos = clickedEl.object3D.getWorldPosition(new THREE.Vector3());
-        const cameraPos = cameraRig.object3D.position.clone();
-
-        // Vector from camera to object
-        const toObj = new THREE.Vector3().subVectors(objPos, cameraPos);
-        const distance = toObj.length();
-
-        // Calculate new camera position: stop a bit before the object (e.g. 1.5 units away)
-        const zoomDistance = Math.min(1.5, distance * 0.8);
-        const newCameraPos = objPos.clone().add(toObj.clone().negate().setLength(zoomDistance));
-
-        // Animate move and rotate cameraRig
-        removeAnimation('animation__move');
-        removeAnimation('animation__rotate');
-
-        // Animate position
-        cameraRig.setAttribute('animation__move', {
-          property: 'position',
-          to: `${newCameraPos.x.toFixed(3)} ${newCameraPos.y.toFixed(3)} ${newCameraPos.z.toFixed(3)}`,
-          dur: 700,
-          easing: 'easeInOutQuad'
-        });
-
-        // Calculate rotation to look at the object
-        // We'll rotate the cameraRig to face the clicked object horizontally only (yaw)
-        const direction = new THREE.Vector3().subVectors(objPos, newCameraPos).normalize();
-        const yaw = Math.atan2(direction.x, direction.z) * (180 / Math.PI);
-        // We keep pitch and roll same for simplicity
-        const currentRotation = cameraRig.getAttribute('rotation');
-
-        cameraRig.setAttribute('animation__rotate', {
-          property: 'rotation',
-          to: `${currentRotation.x} ${yaw} 0`,
-          dur: 700,
-          easing: 'easeInOutQuad'
-        });
+        if (clickedEl.id === 'sphere') {
+          message.textContent = 'Confirmed';
+          message.style.display = 'block';
+          // Hide message after 2 seconds
+          setTimeout(() => {
+            message.style.display = 'none';
+          }, 2000);
+        } else {
+          message.style.display = 'none';
+        }
       });
-
-      // Initialize
-      loadPresetsFromStorage();
-      refreshPresetList();
-      resetCamera();
     </script>
   </body>
 </html>
+
