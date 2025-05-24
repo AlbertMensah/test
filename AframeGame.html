@@ -1,0 +1,49 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-sky color="#ECECEC"></a-sky>
+
+      <!-- Camera and cursor -->
+      <a-entity camera look-controls>
+        <a-entity 
+          cursor="rayOrigin: mouse" 
+          raycaster="objects: .clickable" 
+          position="0 0 -1" 
+          geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" 
+          material="color: black; shader: flat">
+        </a-entity>
+      </a-entity>
+
+      <!-- Floor -->
+      <a-plane rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
+
+      <!-- Box (the "target") -->
+      <a-box id="fallingBox" class="clickable" position="0 5 -3" color="#FF0000">
+        <a-animation 
+          attribute="position" 
+          to="0 0 -3" 
+          dur="2000" 
+          direction="alternate" 
+          repeat="indefinite">
+        </a-animation>
+      </a-box>
+
+      <!-- Score text -->
+      <a-text id="scoreText" value="Score: 0" position="-0.5 2 -2" color="#000"></a-text>
+    </a-scene>
+
+    <script>
+      let score = 0;
+      const box = document.getElementById('fallingBox');
+      const scoreText = document.getElementById('scoreText');
+
+      box.addEventListener('click', () => {
+        score++;
+        scoreText.setAttribute('value', 'Score: ' + score);
+      });
+    </script>
+  </body>
+</html>
