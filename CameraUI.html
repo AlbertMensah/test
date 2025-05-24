@@ -17,76 +17,77 @@
         z-index: 10;
         line-height: 1.5em;
       }
-      .controls, .vertical-controls, .rotation-controls {
+      .control-panel {
         position: absolute;
+        bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
-        gap: 5px;
+        flex-direction: column;
+        gap: 10px;
         z-index: 10;
-        justify-content: center;
+        align-items: center;
       }
-      .controls {
-        bottom: 160px;
+      .button-group {
+        display: flex;
+        gap: 5px;
         flex-wrap: wrap;
-        width: 200px;
         justify-content: center;
-      }
-      .vertical-controls {
-        bottom: 100px;
-      }
-      .rotation-controls {
-        bottom: 40px;
       }
       button {
-        padding: 10px;
-        font-size: 14px;
+        padding: 8px 10px;
+        font-size: 12px;
         background: rgba(0,0,0,0.7);
         color: white;
         border: none;
         cursor: pointer;
+        min-width: 50px;
       }
     </style>
   </head>
   <body>
-    <div id="camera-data">
-      Position: <br>
-      Rotation: <br>
-      Direction: <br>
-    </div>
+    <div id="camera-data"></div>
 
-    <!-- Directional Controls -->
-    <div class="controls">
-      <button onclick="moveCamera(-1, 0, -1)">↖</button>
-      <button onclick="moveCamera(0, 0, -1)">↑</button>
-      <button onclick="moveCamera(1, 0, -1)">↗</button>
-      <button onclick="moveCamera(-1, 0, 0)">←</button>
-      <button onclick="resetCamera()">⭯</button>
-      <button onclick="moveCamera(1, 0, 0)">→</button>
-      <button onclick="moveCamera(-1, 0, 1)">↙</button>
-      <button onclick="moveCamera(0, 0, 1)">↓</button>
-      <button onclick="moveCamera(1, 0, 1)">↘</button>
-    </div>
+    <div class="control-panel">
+      <!-- Move Buttons -->
+      <div class="button-group">
+        <button onclick="moveCamera(-1, 0, -1)">↖</button>
+        <button onclick="moveCamera(0, 0, -1)">↑</button>
+        <button onclick="moveCamera(1, 0, -1)">↗</button>
+        <button onclick="moveCamera(-1, 0, 0)">←</button>
+        <button onclick="resetCamera()">⭯</button>
+        <button onclick="moveCamera(1, 0, 0)">→</button>
+        <button onclick="moveCamera(-1, 0, 1)">↙</button>
+        <button onclick="moveCamera(0, 0, 1)">↓</button>
+        <button onclick="moveCamera(1, 0, 1)">↘</button>
+      </div>
 
-    <!-- Vertical Controls -->
-    <div class="vertical-controls">
-      <button onclick="moveCamera(0, 1, 0)">↑ Y</button>
-      <button onclick="moveCamera(0, -1, 0)">↓ Y</button>
-    </div>
+      <!-- Vertical Movement -->
+      <div class="button-group">
+        <button onclick="moveCamera(0, 1, 0)">↑ Y</button>
+        <button onclick="moveCamera(0, -1, 0)">↓ Y</button>
+      </div>
 
-    <!-- Rotation Controls -->
-    <div class="rotation-controls">
-      <button onclick="rotateCamera(0, -10, 0)">Yaw ←</button>
-      <button onclick="rotateCamera(0, 10, 0)">Yaw →</button>
-      <button onclick="rotateCamera(-10, 0, 0)">Pitch ↑</button>
-      <button onclick="rotateCamera(10, 0, 0)">Pitch ↓</button>
+      <!-- Rotation Buttons -->
+      <div class="button-group">
+        <button onclick="rotateCamera(0, -10, 0)">Yaw ←</button>
+        <button onclick="rotateCamera(0, 10, 0)">Yaw →</button>
+        <button onclick="rotateCamera(-10, 0, 0)">Pitch ↑</button>
+        <button onclick="rotateCamera(10, 0, 0)">Pitch ↓</button>
+      </div>
+
+      <!-- Zoom + Save/Restore -->
+      <div class="button-group">
+        <button onclick="zoomCamera(-1)">Zoom In</button>
+        <button onclick="zoomCamera(1)">Zoom Out</button>
+        <button onclick="saveCamera()">Save</button>
+        <button onclick="restoreCamera()">Restore</button>
+      </div>
     </div>
 
     <a-scene>
       <a-entity id="cameraRig" position="0 1.6 0" rotation="0 0 0">
         <a-camera wasd-controls look-controls></a-camera>
-        <a-animation id="posAnim" attribute="position" dur="400" fill="forwards"></a-animation>
-        <a-animation id="rotAnim" attribute="rotation" dur="400" fill="forwards"></a-animation>
       </a-entity>
 
       <a-box position="0 0.5 -3" color="#4CC3D9"></a-box>
@@ -100,6 +101,7 @@
       const cameraDataDiv = document.getElementById('camera-data');
       const moveSpeed = 0.5;
       const rotateStep = 10;
+      let savedPos = null, savedRot = null;
 
       AFRAME.registerComponent('update-camera-data', {
         tick: function () {
@@ -118,11 +120,11 @@
       cameraRig.setAttribute('update-camera-data', '');
 
       function moveCamera(x, y, z) {
-        const currentPos = cameraRig.getAttribute('position');
+        const pos = cameraRig.getAttribute('position');
         const newPos = {
-          x: currentPos.x + x * moveSpeed,
-          y: currentPos.y + y * moveSpeed,
-          z: currentPos.z + z * moveSpeed
+          x: pos.x + x * moveSpeed,
+          y: pos.y + y * moveSpeed,
+          z: pos.z + z * moveSpeed
         };
         cameraRig.setAttribute('animation__move', {
           property: 'position',
@@ -133,17 +135,34 @@
       }
 
       function rotateCamera(rx, ry, rz) {
-        const currentRot = cameraRig.getAttribute('rotation');
+        const rot = cameraRig.getAttribute('rotation');
         const newRot = {
-          x: currentRot.x + rx,
-          y: currentRot.y + ry,
-          z: currentRot.z + rz
+          x: rot.x + rx,
+          y: rot.y + ry,
+          z: rot.z + rz
         };
         cameraRig.setAttribute('animation__rotate', {
           property: 'rotation',
           to: `${newRot.x} ${newRot.y} ${newRot.z}`,
           dur: 300,
           easing: 'easeOutQuad'
+        });
+      }
+
+      function zoomCamera(direction) {
+        const dirVec = new THREE.Vector3();
+        cameraRig.object3D.getWorldDirection(dirVec);
+        const pos = cameraRig.getAttribute('position');
+        const newPos = {
+          x: pos.x + dirVec.x * moveSpeed * direction,
+          y: pos.y + dirVec.y * moveSpeed * direction,
+          z: pos.z + dirVec.z * moveSpeed * direction
+        };
+        cameraRig.setAttribute('animation__zoom', {
+          property: 'position',
+          to: `${newPos.x} ${newPos.y} ${newPos.z}`,
+          dur: 300,
+          easing: 'easeOutCubic'
         });
       }
 
@@ -161,7 +180,33 @@
           easing: 'easeOutExpo'
         });
       }
+
+      function saveCamera() {
+        savedPos = { ...cameraRig.getAttribute('position') };
+        savedRot = { ...cameraRig.getAttribute('rotation') };
+        alert('Camera position saved!');
+      }
+
+      function restoreCamera() {
+        if (!savedPos || !savedRot) {
+          alert('No saved camera position!');
+          return;
+        }
+        cameraRig.setAttribute('animation__move', {
+          property: 'position',
+          to: `${savedPos.x} ${savedPos.y} ${savedPos.z}`,
+          dur: 400,
+          easing: 'easeOutQuad'
+        });
+        cameraRig.setAttribute('animation__rotate', {
+          property: 'rotation',
+          to: `${savedRot.x} ${savedRot.y} ${savedRot.z}`,
+          dur: 400,
+          easing: 'easeOutQuad'
+        });
+      }
     </script>
   </body>
 </html>
+
 
