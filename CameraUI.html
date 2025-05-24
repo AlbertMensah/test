@@ -34,14 +34,20 @@
         flex-wrap: wrap;
         justify-content: center;
       }
-      button {
-        padding: 8px 10px;
+      button, select, input {
+        padding: 6px;
         font-size: 12px;
         background: rgba(0,0,0,0.7);
         color: white;
         border: none;
         cursor: pointer;
-        min-width: 50px;
+        min-width: 60px;
+      }
+      .preset-panel {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+        flex-wrap: wrap;
       }
     </style>
   </head>
@@ -49,7 +55,7 @@
     <div id="camera-data"></div>
 
     <div class="control-panel">
-      <!-- Move Buttons -->
+      <!-- Movement -->
       <div class="button-group">
         <button onclick="moveCamera(-1, 0, -1)">↖</button>
         <button onclick="moveCamera(0, 0, -1)">↑</button>
@@ -62,13 +68,13 @@
         <button onclick="moveCamera(1, 0, 1)">↘</button>
       </div>
 
-      <!-- Vertical Movement -->
+      <!-- Vertical Move -->
       <div class="button-group">
         <button onclick="moveCamera(0, 1, 0)">↑ Y</button>
         <button onclick="moveCamera(0, -1, 0)">↓ Y</button>
       </div>
 
-      <!-- Rotation Buttons -->
+      <!-- Rotation -->
       <div class="button-group">
         <button onclick="rotateCamera(0, -10, 0)">Yaw ←</button>
         <button onclick="rotateCamera(0, 10, 0)">Yaw →</button>
@@ -76,12 +82,18 @@
         <button onclick="rotateCamera(10, 0, 0)">Pitch ↓</button>
       </div>
 
-      <!-- Zoom + Save/Restore -->
+      <!-- Zoom -->
       <div class="button-group">
         <button onclick="zoomCamera(-1)">Zoom In</button>
         <button onclick="zoomCamera(1)">Zoom Out</button>
-        <button onclick="saveCamera()">Save</button>
-        <button onclick="restoreCamera()">Restore</button>
+      </div>
+
+      <!-- Preset GUI -->
+      <div class="preset-panel">
+        <input type="text" id="presetName" placeholder="Preset name" />
+        <button onclick="saveCamera()">Save Preset</button>
+        <select id="presetList"></select>
+        <button onclick="restoreSelectedPreset()">Restore Preset</button>
       </div>
     </div>
 
@@ -99,9 +111,10 @@
     <script>
       const cameraRig = document.getElementById('cameraRig');
       const cameraDataDiv = document.getElementById('camera-data');
+      const presetInput = document.getElementById('presetName');
+      const presetList = document.getElementById('presetList');
       const moveSpeed = 0.5;
-      const rotateStep = 10;
-      let savedPos = null, savedRot = null;
+      const presets = {};
 
       AFRAME.registerComponent('update-camera-data', {
         tick: function () {
@@ -182,25 +195,34 @@
       }
 
       function saveCamera() {
-        savedPos = { ...cameraRig.getAttribute('position') };
-        savedRot = { ...cameraRig.getAttribute('rotation') };
-        alert('Camera position saved!');
+        const name = presetInput.value.trim();
+        if (!name) return alert("Enter a name!");
+        presets[name] = {
+          position: { ...cameraRig.getAttribute('position') },
+          rotation: { ...cameraRig.getAttribute('rotation') }
+        };
+        const option = document.createElement('option');
+        option.value = name;
+        option.text = name;
+        presetList.appendChild(option);
+        presetInput.value = '';
+        alert("Preset saved: " + name);
       }
 
-      function restoreCamera() {
-        if (!savedPos || !savedRot) {
-          alert('No saved camera position!');
-          return;
-        }
+      function restoreSelectedPreset() {
+        const name = presetList.value;
+        if (!presets[name]) return alert("Preset not found!");
+        const p = presets[name].position;
+        const r = presets[name].rotation;
         cameraRig.setAttribute('animation__move', {
           property: 'position',
-          to: `${savedPos.x} ${savedPos.y} ${savedPos.z}`,
+          to: `${p.x} ${p.y} ${p.z}`,
           dur: 400,
           easing: 'easeOutQuad'
         });
         cameraRig.setAttribute('animation__rotate', {
           property: 'rotation',
-          to: `${savedRot.x} ${savedRot.y} ${savedRot.z}`,
+          to: `${r.x} ${r.y} ${r.z}`,
           dur: 400,
           easing: 'easeOutQuad'
         });
@@ -208,5 +230,6 @@
     </script>
   </body>
 </html>
+
 
 
