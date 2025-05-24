@@ -67,6 +67,10 @@
         justify-content: center;
         flex-wrap: wrap;
       }
+
+      #zoomToggleLabel {
+        color: white;
+      }
     </style>
   </head>
   <body>
@@ -110,6 +114,10 @@
         <button onclick="restoreSelectedPreset()">Restore Preset</button>
         <button onclick="deleteSelectedPreset()">Delete Preset</button>
       </div>
+
+      <div class="button-group">
+        <label id="zoomToggleLabel"><input type="checkbox" id="zoomToggle" checked /> Zoom on click</label>
+      </div>
     </div>
 
     <a-scene cursor="rayOrigin: mouse" raycaster="objects: .clickable">
@@ -129,6 +137,7 @@
       const presetInput = document.getElementById('presetName');
       const presetList = document.getElementById('presetList');
       const message = document.getElementById('message');
+      const zoomToggle = document.getElementById('zoomToggle');
       const moveSpeed = 0.5;
 
       let presets = JSON.parse(localStorage.getItem('cameraPresets') || '{}');
@@ -264,18 +273,30 @@
         alert("Deleted preset: " + name);
       }
 
-      // Zoom to object and display message on sphere click
+      // Zoom to object and face it
       document.querySelector('a-scene').addEventListener('click', (evt) => {
         const clickedEl = evt.target;
-        if (!clickedEl.classList.contains('clickable')) return;
+        if (!clickedEl.classList.contains('clickable') || !zoomToggle.checked) return;
 
         const object3D = clickedEl.object3D;
         const worldPos = new THREE.Vector3();
         object3D.getWorldPosition(worldPos);
 
+        const offset = new THREE.Vector3(0, 1.6, 3);
+        const targetPos = worldPos.clone().add(offset);
+
         cameraRig.setAttribute('animation__move', {
           property: 'position',
-          to: `${worldPos.x} ${worldPos.y + 1.6} ${worldPos.z + 3}`,
+          to: `${targetPos.x} ${targetPos.y} ${targetPos.z}`,
+          dur: 800,
+          easing: 'easeOutExpo'
+        });
+
+        cameraRig.object3D.lookAt(worldPos);
+        const newRot = cameraRig.getAttribute('rotation');
+        cameraRig.setAttribute('animation__rotate', {
+          property: 'rotation',
+          to: `${newRot.x} ${newRot.y} ${newRot.z}`,
           dur: 800,
           easing: 'easeOutCubic'
         });
@@ -283,15 +304,9 @@
         if (clickedEl.id === 'sphere') {
           message.textContent = "Confirmed";
           message.style.display = 'block';
-          setTimeout(() => {
-            message.style.display = 'none';
-          }, 2000);
+          setTimeout(() => message.style.display = 'none', 2000);
         }
       });
     </script>
   </body>
 </html>
-
-
-
-
