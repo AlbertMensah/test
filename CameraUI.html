@@ -1,21 +1,61 @@
+
 <html>
   <head>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
-      #camera-coords {
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: monospace;
+      }
+      #camera-data {
         position: absolute;
         top: 10px;
         left: 10px;
         color: white;
         background: rgba(0, 0, 0, 0.6);
-        padding: 8px;
-        font-family: monospace;
-        z-index: 999;
+        padding: 10px;
+        z-index: 10;
+        line-height: 1.5em;
+      }
+      .controls {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: grid;
+        grid-template-columns: repeat(3, 60px);
+        grid-gap: 5px;
+        z-index: 10;
+      }
+      .controls button {
+        padding: 10px;
+        font-size: 14px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        border: none;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
-    <div id="camera-coords">X: 0 Y: 0 Z: 0</div>
+    <div id="camera-data">
+      Position: <br>
+      Rotation: <br>
+      Direction: <br>
+    </div>
+
+    <div class="controls">
+      <button onclick="moveCamera(-1, 0, -1)">↖</button>
+      <button onclick="moveCamera(0, 0, -1)">↑</button>
+      <button onclick="moveCamera(1, 0, -1)">↗</button>
+      <button onclick="moveCamera(-1, 0, 0)">←</button>
+      <button onclick="resetCamera()">⭯</button>
+      <button onclick="moveCamera(1, 0, 0)">→</button>
+      <button onclick="moveCamera(-1, 0, 1)">↙</button>
+      <button onclick="moveCamera(0, 0, 1)">↓</button>
+      <button onclick="moveCamera(1, 0, 1)">↘</button>
+    </div>
 
     <a-scene>
       <a-entity id="cameraRig" position="0 1.6 0">
@@ -29,18 +69,38 @@
     </a-scene>
 
     <script>
-      const coordsDisplay = document.getElementById("camera-coords");
-      const cameraRig = document.getElementById("cameraRig");
+      const cameraRig = document.getElementById('cameraRig');
+      const cameraDataDiv = document.getElementById('camera-data');
+      const moveSpeed = 0.2;
 
-      AFRAME.registerComponent('update-coords', {
+      AFRAME.registerComponent('update-camera-data', {
         tick: function () {
           const pos = cameraRig.object3D.position;
-          coordsDisplay.innerText =
-            `X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}`;
+          const rot = cameraRig.object3D.rotation;
+          const dir = new THREE.Vector3();
+          cameraRig.object3D.getWorldDirection(dir);
+
+          cameraDataDiv.innerHTML =
+            `Position: X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}<br>` +
+            `Rotation: X: ${(rot.x * 180 / Math.PI).toFixed(2)} Y: ${(rot.y * 180 / Math.PI).toFixed(2)} Z: ${(rot.z * 180 / Math.PI).toFixed(2)}<br>` +
+            `Direction: X: ${dir.x.toFixed(2)} Y: ${dir.y.toFixed(2)} Z: ${dir.z.toFixed(2)}`;
         }
       });
 
-      cameraRig.setAttribute('update-coords', '');
+      cameraRig.setAttribute('update-camera-data', '');
+
+      function moveCamera(x, y, z) {
+        const pos = cameraRig.getAttribute('position');
+        cameraRig.setAttribute('position', {
+          x: pos.x + x * moveSpeed,
+          y: pos.y + y * moveSpeed,
+          z: pos.z + z * moveSpeed
+        });
+      }
+
+      function resetCamera() {
+        cameraRig.setAttribute('position', {x: 0, y: 1.6, z: 0});
+      }
     </script>
   </body>
 </html>
