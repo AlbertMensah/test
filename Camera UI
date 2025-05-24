@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <style>
+      #camera-coords {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 8px;
+        font-family: monospace;
+        z-index: 999;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="camera-coords">X: 0 Y: 0 Z: 0</div>
+
+    <a-scene>
+      <a-entity id="cameraRig" position="0 1.6 0">
+        <a-camera wasd-controls look-controls></a-camera>
+      </a-entity>
+
+      <a-box position="0 0.5 -3" color="#4CC3D9"></a-box>
+      <a-sphere position="2 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
+      <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+
+    <script>
+      const coordsDisplay = document.getElementById("camera-coords");
+      const cameraRig = document.getElementById("cameraRig");
+
+      AFRAME.registerComponent('update-coords', {
+        tick: function () {
+          const pos = cameraRig.object3D.position;
+          coordsDisplay.innerText =
+            `X: ${pos.x.toFixed(2)} Y: ${pos.y.toFixed(2)} Z: ${pos.z.toFixed(2)}`;
+        }
+      });
+
+      cameraRig.setAttribute('update-coords', '');
+    </script>
+  </body>
+</html>
