@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Camera Collision Scene</title>
+    <title>Camera Physics Collision Scene</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-event-set-component@^4.0.0/dist/aframe-event-set-component.min.js"></script>
     <script src="https://unpkg.com/super-hands@2.1.0/dist/super-hands.min.js"></script>
@@ -15,49 +15,87 @@
     </style>
   </head>
   <body>
-    <a-scene physics="gravity: -9.8" embedded>
-      <!-- CAMERA RIG WITH COLLISION -->
-      <a-entity id="cameraRig" position="0 1.6 0">
-        <!-- Collider body -->
-        <a-entity id="cameraCollider"
-                  geometry="primitive: sphere; radius: 0.3"
-                  position="0 0 0"
-                  dynamic-body
-                  visible="false">
-        </a-entity>
-        <!-- Camera inside collider -->
-        <a-camera position="0 0 0" wasd-controls-enabled="false" look-controls></a-camera>
+    <a-scene physics="gravity: -9.8" embedded cursor="rayOrigin: mouse">
+      
+      <!-- CAMERA COLLIDER BODY -->
+      <a-entity id="cameraCollider"
+                geometry="primitive: sphere; radius: 0.3"
+                position="0 1.6 0"
+                dynamic-body
+                visible="false">
+      </a-entity>
+
+      <!-- CAMERA (FOLLOW COLLIDER) -->
+      <a-entity id="cameraRig" position="0 0 0">
+        <a-camera look-controls></a-camera>
       </a-entity>
 
       <!-- GROUND -->
       <a-plane position="0 0 -4"
                rotation="-90 0 0"
-               width="20"
-               height="20"
+               width="30"
+               height="30"
                color="#7BC8A4"
                static-body>
       </a-plane>
 
       <!-- BOX -->
-      <a-box position="0 0.5 -3"
+      <a-box id="box"
+             position="0 0.5 -3"
              color="#4CC3D9"
              static-body
-             event-set__enter="_event: click; _target: #cameraRig; position: 0 0.5 -3">
+             class="clickable">
       </a-box>
 
       <!-- SPHERE -->
-      <a-sphere position="2 1.25 -5"
+      <a-sphere id="sphere"
+                position="2 1.25 -5"
                 radius="1.25"
                 color="#EF2D5E"
                 static-body
-                class="clickable"
-                event-set__enter="_event: click; _target: #cameraRig; position: 2 1.25 -5">
+                class="clickable">
       </a-sphere>
 
+      <!-- SKY -->
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
+
+    <script>
+      const cameraCollider = document.querySelector('#cameraCollider');
+      const cameraRig = document.querySelector('#cameraRig');
+      const clickableEls = document.querySelectorAll('.clickable');
+
+      // Sync cameraRig with collider position
+      AFRAME.registerComponent('sync-camera', {
+        tick: function () {
+          const pos = cameraCollider.object3D.position;
+          cameraRig.setAttribute('position', pos);
+        }
+      });
+      cameraRig.setAttribute('sync-camera', '');
+
+      // Move collider to object on click
+      clickableEls.forEach(el => {
+        el.addEventListener('click', () => {
+          const targetPos = el.getAttribute('position');
+          // Offset back a little from the object center to avoid being inside it
+          const offsetZ = 2;
+          const newPos = {
+            x: targetPos.x,
+            y: targetPos.y + 1,
+            z: targetPos.z + offsetZ
+          };
+          cameraCollider.setAttribute('position', newPos);
+
+          if (el.id === 'sphere') {
+            alert('Confirmed: Sphere clicked');
+          }
+        });
+      });
+    </script>
   </body>
 </html>
+
 
 
 
