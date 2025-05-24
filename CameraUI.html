@@ -54,58 +54,58 @@
   <body>
     <div id="camera-data"></div>
 
-    <div class="control-panel" role="region" aria-label="Camera controls">
+    <div class="control-panel">
       <!-- Movement -->
       <div class="button-group">
-        <button onclick="moveCamera(-1, 0, -1)" aria-label="Move camera diagonally forward-left">↖</button>
-        <button onclick="moveCamera(0, 0, -1)" aria-label="Move camera forward">↑</button>
-        <button onclick="moveCamera(1, 0, -1)" aria-label="Move camera diagonally forward-right">↗</button>
-        <button onclick="moveCamera(-1, 0, 0)" aria-label="Move camera left">←</button>
-        <button onclick="resetCamera()" aria-label="Reset camera position and rotation">⭯</button>
-        <button onclick="moveCamera(1, 0, 0)" aria-label="Move camera right">→</button>
-        <button onclick="moveCamera(-1, 0, 1)" aria-label="Move camera diagonally backward-left">↙</button>
-        <button onclick="moveCamera(0, 0, 1)" aria-label="Move camera backward">↓</button>
-        <button onclick="moveCamera(1, 0, 1)" aria-label="Move camera diagonally backward-right">↘</button>
+        <button onclick="moveCamera(-1, 0, -1)">↖</button>
+        <button onclick="moveCamera(0, 0, -1)">↑</button>
+        <button onclick="moveCamera(1, 0, -1)">↗</button>
+        <button onclick="moveCamera(-1, 0, 0)">←</button>
+        <button onclick="resetCamera()">⭯</button>
+        <button onclick="moveCamera(1, 0, 0)">→</button>
+        <button onclick="moveCamera(-1, 0, 1)">↙</button>
+        <button onclick="moveCamera(0, 0, 1)">↓</button>
+        <button onclick="moveCamera(1, 0, 1)">↘</button>
       </div>
 
       <!-- Vertical Move -->
       <div class="button-group">
-        <button onclick="moveCamera(0, 1, 0)" aria-label="Move camera up">↑ Y</button>
-        <button onclick="moveCamera(0, -1, 0)" aria-label="Move camera down">↓ Y</button>
+        <button onclick="moveCamera(0, 1, 0)">↑ Y</button>
+        <button onclick="moveCamera(0, -1, 0)">↓ Y</button>
       </div>
 
       <!-- Rotation -->
       <div class="button-group">
-        <button onclick="rotateCamera(0, -10, 0)" aria-label="Rotate camera yaw left">Yaw ←</button>
-        <button onclick="rotateCamera(0, 10, 0)" aria-label="Rotate camera yaw right">Yaw →</button>
-        <button onclick="rotateCamera(-10, 0, 0)" aria-label="Rotate camera pitch up">Pitch ↑</button>
-        <button onclick="rotateCamera(10, 0, 0)" aria-label="Rotate camera pitch down">Pitch ↓</button>
+        <button onclick="rotateCamera(0, -10, 0)">Yaw ←</button>
+        <button onclick="rotateCamera(0, 10, 0)">Yaw →</button>
+        <button onclick="rotateCamera(-10, 0, 0)">Pitch ↑</button>
+        <button onclick="rotateCamera(10, 0, 0)">Pitch ↓</button>
       </div>
 
       <!-- Zoom -->
       <div class="button-group">
-        <button onclick="zoomCamera(-1)" aria-label="Zoom in camera">Zoom In</button>
-        <button onclick="zoomCamera(1)" aria-label="Zoom out camera">Zoom Out</button>
+        <button onclick="zoomCamera(-1)">Zoom In</button>
+        <button onclick="zoomCamera(1)">Zoom Out</button>
       </div>
 
       <!-- Preset GUI -->
-      <div class="preset-panel" role="region" aria-label="Camera presets">
-        <input type="text" id="presetName" placeholder="Preset name" aria-label="Preset name input" />
-        <button onclick="saveCamera()" aria-label="Save camera preset">Save Preset</button>
-        <select id="presetList" aria-label="Saved presets list"></select>
-        <button onclick="restoreSelectedPreset()" aria-label="Restore selected preset">Restore Preset</button>
-        <button onclick="deleteSelectedPreset()" aria-label="Delete selected preset">Delete Preset</button>
+      <div class="preset-panel">
+        <input type="text" id="presetName" placeholder="Preset name" />
+        <button onclick="saveCamera()">Save Preset</button>
+        <select id="presetList"></select>
+        <button onclick="restoreSelectedPreset()">Restore Preset</button>
+        <button onclick="deleteSelectedPreset()">Delete Preset</button>
       </div>
     </div>
 
-    <a-scene>
+    <a-scene embedded>
       <a-entity id="cameraRig" position="0 1.6 0" rotation="0 0 0">
         <a-camera wasd-controls look-controls></a-camera>
       </a-entity>
 
-      <a-box position="0 0.5 -3" color="#4CC3D9"></a-box>
-      <a-sphere position="2 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
+      <a-box position="0 0.5 -3" color="#4CC3D9" class="clickable"></a-box>
+      <a-sphere position="2 1.25 -5" radius="1.25" color="#EF2D5E" class="clickable"></a-sphere>
+      <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4" class="clickable"></a-plane>
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
 
@@ -117,24 +117,39 @@
       const moveSpeed = 0.5;
       const presets = {};
 
-      // Load presets from localStorage on startup
-      const storedPresets = localStorage.getItem('aframeCameraPresets');
-      if (storedPresets) {
-        Object.assign(presets, JSON.parse(storedPresets));
-        refreshPresetList();
+      // Load presets from localStorage
+      function loadPresetsFromStorage() {
+        const stored = localStorage.getItem('cameraPresets');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            Object.assign(presets, parsed);
+          } catch (e) {
+            console.warn('Failed to parse presets from storage:', e);
+          }
+        }
       }
 
+      // Save presets to localStorage
       function savePresetsToStorage() {
-        localStorage.setItem('aframeCameraPresets', JSON.stringify(presets));
+        localStorage.setItem('cameraPresets', JSON.stringify(presets));
       }
 
+      // Refresh preset dropdown list
       function refreshPresetList() {
         presetList.innerHTML = '';
-        for (const name in presets) {
+        Object.keys(presets).forEach(name => {
           const option = document.createElement('option');
           option.value = name;
           option.text = name;
           presetList.appendChild(option);
+        });
+      }
+
+      // Remove an animation attribute (to reset it)
+      function removeAnimation(name) {
+        if (cameraRig.hasAttribute(name)) {
+          cameraRig.removeAttribute(name);
         }
       }
 
@@ -154,21 +169,13 @@
 
       cameraRig.setAttribute('update-camera-data', '');
 
-      // Remove any existing animation on property before applying new one
-      function removeAnimation(name) {
-        if (cameraRig.hasAttribute(name)) {
-          cameraRig.removeAttribute(name);
-        }
-      }
-
       function moveCamera(x, y, z) {
         const pos = cameraRig.getAttribute('position');
         const newPos = {
           x: pos.x + x * moveSpeed,
-          y: Math.max(pos.y + y * moveSpeed, 0.5), // clamp Y minimum 0.5
+          y: pos.y + y * moveSpeed,
           z: pos.z + z * moveSpeed
         };
-        removeAnimation('animation__move');
         cameraRig.setAttribute('animation__move', {
           property: 'position',
           to: `${newPos.x} ${newPos.y} ${newPos.z}`,
@@ -177,24 +184,13 @@
         });
       }
 
-      function clampAngle(angle) {
-        let a = angle % 360;
-        if (a < -180) a += 360;
-        else if (a > 180) a -= 360;
-        return a;
-      }
-
       function rotateCamera(rx, ry, rz) {
         const rot = cameraRig.getAttribute('rotation');
-        let newRot = {
-          x: clampAngle(rot.x + rx),
-          y: clampAngle(rot.y + ry),
-          z: clampAngle(rot.z + rz)
+        const newRot = {
+          x: rot.x + rx,
+          y: rot.y + ry,
+          z: rot.z + rz
         };
-        // Clamp pitch between -90 and 90 degrees
-        newRot.x = Math.min(Math.max(newRot.x, -90), 90);
-
-        removeAnimation('animation__rotate');
         cameraRig.setAttribute('animation__rotate', {
           property: 'rotation',
           to: `${newRot.x} ${newRot.y} ${newRot.z}`,
@@ -209,10 +205,9 @@
         const pos = cameraRig.getAttribute('position');
         const newPos = {
           x: pos.x + dirVec.x * moveSpeed * direction,
-          y: Math.max(pos.y + dirVec.y * moveSpeed * direction, 0.5), // clamp Y minimum 0.5
+          y: pos.y + dirVec.y * moveSpeed * direction,
           z: pos.z + dirVec.z * moveSpeed * direction
         };
-        removeAnimation('animation__zoom');
         cameraRig.setAttribute('animation__zoom', {
           property: 'position',
           to: `${newPos.x} ${newPos.y} ${newPos.z}`,
@@ -222,8 +217,6 @@
       }
 
       function resetCamera() {
-        removeAnimation('animation__move');
-        removeAnimation('animation__rotate');
         cameraRig.setAttribute('animation__move', {
           property: 'position',
           to: `0 1.6 0`,
@@ -293,26 +286,54 @@
         alert(`Preset deleted: ${name}`);
       }
 
-      // Keyboard controls
-      window.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; // ignore if typing in inputs
-        switch (e.key.toLowerCase()) {
-          case 'w': moveCamera(0, 0, -1); break;
-          case 's': moveCamera(0, 0, 1); break;
-          case 'a': moveCamera(-1, 0, 0); break;
-          case 'd': moveCamera(1, 0, 0); break;
-          case 'q': moveCamera(0, 1, 0); break; // up
-          case 'e': moveCamera(0, -1, 0); break; // down
-          case 'arrowleft': rotateCamera(0, -10, 0); break;
-          case 'arrowright': rotateCamera(0, 10, 0); break;
-          case 'arrowup': rotateCamera(-10, 0, 0); break;
-          case 'arrowdown': rotateCamera(10, 0, 0); break;
-          case '+':
-          case '=': zoomCamera(-1); break; // zoom in
-          case '-': zoomCamera(1); break;  // zoom out
-          case 'r': resetCamera(); break;
-        }
+      // Click-to-zoom feature
+      document.querySelector('a-scene').addEventListener('click', function(evt) {
+        const clickedEl = evt.target;
+        // Only trigger on our clickable objects
+        if (!clickedEl.classList.contains('clickable')) return;
+
+        const objPos = clickedEl.object3D.getWorldPosition(new THREE.Vector3());
+        const cameraPos = cameraRig.object3D.position.clone();
+
+        // Vector from camera to object
+        const toObj = new THREE.Vector3().subVectors(objPos, cameraPos);
+        const distance = toObj.length();
+
+        // Calculate new camera position: stop a bit before the object (e.g. 1.5 units away)
+        const zoomDistance = Math.min(1.5, distance * 0.8);
+        const newCameraPos = objPos.clone().add(toObj.clone().negate().setLength(zoomDistance));
+
+        // Animate move and rotate cameraRig
+        removeAnimation('animation__move');
+        removeAnimation('animation__rotate');
+
+        // Animate position
+        cameraRig.setAttribute('animation__move', {
+          property: 'position',
+          to: `${newCameraPos.x.toFixed(3)} ${newCameraPos.y.toFixed(3)} ${newCameraPos.z.toFixed(3)}`,
+          dur: 700,
+          easing: 'easeInOutQuad'
+        });
+
+        // Calculate rotation to look at the object
+        // We'll rotate the cameraRig to face the clicked object horizontally only (yaw)
+        const direction = new THREE.Vector3().subVectors(objPos, newCameraPos).normalize();
+        const yaw = Math.atan2(direction.x, direction.z) * (180 / Math.PI);
+        // We keep pitch and roll same for simplicity
+        const currentRotation = cameraRig.getAttribute('rotation');
+
+        cameraRig.setAttribute('animation__rotate', {
+          property: 'rotation',
+          to: `${currentRotation.x} ${yaw} 0`,
+          dur: 700,
+          easing: 'easeInOutQuad'
+        });
       });
+
+      // Initialize
+      loadPresetsFromStorage();
+      refreshPresetList();
+      resetCamera();
     </script>
   </body>
 </html>
