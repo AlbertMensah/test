@@ -2,13 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Scene Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D Scene Viewer with Physics</title>
+  <!-- A-Frame Library -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <!-- Ammo.js Physics Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/ammo.js@0.0.10/ammo.js"></script>
+  <!-- A-Frame Physics System -->
   <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; }
-    .controls, .lights, .vertical, .reset { position: absolute; z-index: 1000; }
+    .controls, .vertical, .reset, .lights {
+      position: absolute;
+      z-index: 1000;
+    }
     .controls {
       bottom: 20px; left: 90px;
       display: grid;
@@ -23,9 +30,13 @@
       flex-direction: column;
       gap: 5px;
     }
-    .reset { bottom: 20px; left: 20px; }
+    .reset {
+      bottom: 20px;
+      left: 20px;
+    }
     .lights {
-      top: 20px; right: 20px;
+      top: 20px;
+      right: 20px;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -39,7 +50,9 @@
       cursor: pointer;
       opacity: 0.85;
     }
-    button:hover { opacity: 1; }
+    button:hover {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -76,13 +89,15 @@
 </div>
 
 <!-- A-Frame Scene -->
-<a-scene physics="gravity: -9.8">
+<a-scene physics="driver: ammo; gravity: -9.8; debug: false">
   <a-assets>
+    <!-- Load your models here -->
     <a-asset-item id="my-obj" src="https://albertmensah.github.io/test/test.obj"></a-asset-item>
     <a-asset-item id="my-mtl" src="https://albertmensah.github.io/test/test.mtl"></a-asset-item>
     <a-asset-item id="gas-station" src="https://albertmensah.github.io/test/Old%20Gas%20Station%20Interior%20(Splat).glb"></a-asset-item>
   </a-assets>
 
+  <!-- Sky -->
   <a-sky color="#87CEEB"></a-sky>
 
   <!-- Lights -->
@@ -90,8 +105,10 @@
   <a-light id="directionalLight" type="directional" color="#ffffff" intensity="3" position="2 4 3"></a-light>
   <a-light id="pointLight" type="point" color="#ffffff" intensity="3" distance="10" position="0 3 3"></a-light>
 
-  <!-- Camera -->
-  <a-entity id="rig" position="0 1.6 3" dynamic-body>
+  <!-- Camera Rig with Physics -->
+  <a-entity id="rig"
+            position="0 1.6 3"
+            dynamic-body="shape: capsule; mass: 5; linearDamping: 0.9; angularDamping: 1; angularFactor: 0 0 0">
     <a-camera look-controls wasd-controls-enabled="false"></a-camera>
   </a-entity>
 
@@ -116,58 +133,131 @@
 </a-scene>
 
 <script>
+  // Get references to the rig and camera
+  const rig = document.querySelector('#rig');
+  const camera = rig.querySelector('a-camera');
+
+  // Movement step size
+  const stepVelocity = 2;
+
+  // Object to track pressed keys
+  const keysPressed = {
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+    KeyW: false,
+    KeyA: false,
+    KeyS: false,
+    KeyD: false
+  };
+
+  // Function to get horizontal forward and right directions based on camera orientation
+  function getCameraDirections() {
+    const forward = new THREE.Vector3();
+    camera.object3D.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    return { forward, right };
+  }
+
+  // Function to get movement vector based on pressed keys
+  function getMovementVector() {
+    let x = 0, z = 0;
+    if (keysPressed.KeyW || keysPressed.ArrowUp) z -= 1;
+    if (keysPressed.KeyS || keysPressed.ArrowDown) z += 1;
+    if (keysPressed.KeyA || keysPressed.ArrowLeft) x -= 1;
+    if (keysPressed.KeyD || keysPressed.ArrowRight) x += 1;
+
+    // Normalize the vector to prevent faster diagonal movement
+    const length = Math.hypot(x, z);
+    if (length > 0) {
+      x /= length;
+      z /= length;
+    }
+
+    return { x, z };
+  }
+
+  // Function to update velocity based on pressed keys
+  function updateVelocity() {
+    if (!rig.body) return;
+
+    const { forward, right } = getCameraDirections();
+    const moveVec = getMovementVector();
+
+    const velocity = new THREE.Vector3();
+    velocity.addScaledVector(forward, moveVec.z * stepVelocity);
+    velocity.addScaledVector(right, moveVec.x * stepVelocity);
+
+    // Preserve the current vertical velocity (e.g., gravity)
+    rig.body.velocity.x = velocity.x;
+    rig.body.velocity.z = velocity.z;
+  }
+
+  // Event listeners for keydown and keyup to track pressed keys
+  window.addEventListener('keydown', (e) => {
+    if (e.code in keysPressed) {
+      keysPressed[e.code] = true;
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.code in keysPressed) {
+      keysPressed[e.code] = false;
+    }
+  });
+
+  // Update velocity on each physics tick
+  AFRAME.registerComponent('player-controls', {
+    tick: function () {
+      updateVelocity();
+    }
+  });
+
+  // Attach the player-controls component to the rig
+  rig.setAttribute('player-controls', '');
+
+  // Function to move the rig in a specified direction via buttons
   function move(direction) {
-    const rig = document.querySelector('#rig');
-    const step = 0.3;
-    const pos = rig.getAttribute('position');
-    const directions = {
-      forward: [0, 0, -step],
-      backward: [0, 0, step],
-      left: [-step, 0, 0],
-      right: [step, 0, 0],
-      'forward-left': [-step, 0, -step],
-      'forward-right': [step, 0, -step],
-      'backward-left': [-step, 0, step],
-      'backward-right': [step, 0, step]
-    };
-    const [dx, dy, dz] = directions[direction];
-    pos.x += dx; pos.y += dy; pos.z += dz;
-    rig.setAttribute('position', pos);
+    if (!rig.body) return;
+
+    const { forward, right } = getCameraDirections();
+    let x = 0, z = 0;
+    switch (direction) {
+      case 'forward': z = -1; break;
+      case 'backward': z = 1; break;
+      case 'left': x = -1; break;
+      case 'right': x = 1; break;
+      case 'forward-left': x = -1; z = -1; break;
+      case 'forward-right': x = 1; z = -1; break;
+      case 'backward-left': x = -1; z = 1; break;
+      case 'backward-right': x = 1; z = 1; break;
+    }
+
+    // Normalize direction
+    const length = Math.hypot(x, z);
+    if (length > 0) {
+      x /= length;
+      z /= length;
+    }
+
+    const burst = new THREE.Vector3();
+    burst.addScaledVector(forward, z * stepVelocity);
+    burst.addScaledVector(right, x * stepVelocity);
+
+    // Apply velocity burst
+    rig.body.velocity.x += burst.x;
+    rig.body.velocity.z += burst.z;
   }
 
+  // Function to move the rig vertically
   function moveVertical(amount) {
-    const rig = document.querySelector('#rig');
-    const pos = rig.getAttribute('position');
-    pos.y += amount;
-    rig.setAttribute('position', pos);
-  }
+    const pos = rig.getAttribute('position
+::contentReference[oaicite:0]{index=0}
+ 
 
-  function jump() {
-    const rig = document.querySelector('#rig');
-    if (rig.body && rig.body.velocity.y < 0.1) {
-      rig.body.velocity.y = 5;
-    }
-  }
-
-  function resetCamera() {
-    const rig = document.querySelector('#rig');
-    rig.setAttribute('position', { x: 0, y: 1.6, z: 3 });
-    if (rig.body) {
-      rig.body.velocity.set(0, 0, 0);
-    }
-  }
-
-  function toggleLight(type) {
-    const idMap = {
-      ambient: 'ambientLight',
-      directional: 'directionalLight',
-      point: 'pointLight'
-    };
-    const light = document.getElementById(idMap[type]);
-    const isVisible = light.getAttribute('visible');
-    light.setAttribute('visible', !isVisible);
-  }
-</script>
-
-</body>
-</html>
