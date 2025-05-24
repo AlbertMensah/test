@@ -26,6 +26,17 @@
     <div id="message"></div>
 
     <a-scene>
+      <a-entity id="cameraRig" position="0 1.6 0" rotation="0 0 0">
+        <a-camera wasd-controls look-controls>
+          <a-cursor 
+            fuse="false" 
+            raycaster="objects: .clickable" 
+            material="color: white; shader: flat" 
+            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015">
+          </a-cursor>
+        </a-camera>
+      </a-entity>
+
       <a-box position="0 0.5 -3" color="#4CC3D9" class="clickable" id="box"></a-box>
       <a-sphere position="2 1.25 -5" radius="1.25" color="#EF2D5E" class="clickable" id="sphere"></a-sphere>
       <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4" class="clickable" id="plane"></a-plane>
@@ -43,7 +54,6 @@
         if (clickedEl.id === 'sphere') {
           message.textContent = 'Confirmed';
           message.style.display = 'block';
-          // Hide message after 2 seconds
           setTimeout(() => {
             message.style.display = 'none';
           }, 2000);
@@ -54,4 +64,5 @@
     </script>
   </body>
 </html>
+
 
