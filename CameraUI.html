@@ -17,24 +17,26 @@
         z-index: 10;
         line-height: 1.5em;
       }
-      .controls {
+      .controls, .vertical-controls, .rotation-controls {
         position: absolute;
-        bottom: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: grid;
-        grid-template-columns: repeat(3, 60px);
-        grid-gap: 5px;
-        z-index: 10;
-      }
-      .vertical-controls {
-        position: absolute;
-        bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
-        gap: 10px;
+        gap: 5px;
         z-index: 10;
+        justify-content: center;
+      }
+      .controls {
+        bottom: 160px;
+        flex-wrap: wrap;
+        width: 200px;
+        justify-content: center;
+      }
+      .vertical-controls {
+        bottom: 100px;
+      }
+      .rotation-controls {
+        bottom: 40px;
       }
       button {
         padding: 10px;
@@ -72,9 +74,19 @@
       <button onclick="moveCamera(0, -1, 0)">↓ Y</button>
     </div>
 
+    <!-- Rotation Controls -->
+    <div class="rotation-controls">
+      <button onclick="rotateCamera(0, -10, 0)">Yaw ←</button>
+      <button onclick="rotateCamera(0, 10, 0)">Yaw →</button>
+      <button onclick="rotateCamera(-10, 0, 0)">Pitch ↑</button>
+      <button onclick="rotateCamera(10, 0, 0)">Pitch ↓</button>
+    </div>
+
     <a-scene>
-      <a-entity id="cameraRig" position="0 1.6 0">
+      <a-entity id="cameraRig" position="0 1.6 0" rotation="0 0 0">
         <a-camera wasd-controls look-controls></a-camera>
+        <a-animation id="posAnim" attribute="position" dur="400" fill="forwards"></a-animation>
+        <a-animation id="rotAnim" attribute="rotation" dur="400" fill="forwards"></a-animation>
       </a-entity>
 
       <a-box position="0 0.5 -3" color="#4CC3D9"></a-box>
@@ -86,7 +98,8 @@
     <script>
       const cameraRig = document.getElementById('cameraRig');
       const cameraDataDiv = document.getElementById('camera-data');
-      const moveSpeed = 0.2;
+      const moveSpeed = 0.5;
+      const rotateStep = 10;
 
       AFRAME.registerComponent('update-camera-data', {
         tick: function () {
@@ -105,17 +118,50 @@
       cameraRig.setAttribute('update-camera-data', '');
 
       function moveCamera(x, y, z) {
-        const pos = cameraRig.getAttribute('position');
-        cameraRig.setAttribute('position', {
-          x: pos.x + x * moveSpeed,
-          y: pos.y + y * moveSpeed,
-          z: pos.z + z * moveSpeed
+        const currentPos = cameraRig.getAttribute('position');
+        const newPos = {
+          x: currentPos.x + x * moveSpeed,
+          y: currentPos.y + y * moveSpeed,
+          z: currentPos.z + z * moveSpeed
+        };
+        cameraRig.setAttribute('animation__move', {
+          property: 'position',
+          to: `${newPos.x} ${newPos.y} ${newPos.z}`,
+          dur: 300,
+          easing: 'easeOutQuad'
+        });
+      }
+
+      function rotateCamera(rx, ry, rz) {
+        const currentRot = cameraRig.getAttribute('rotation');
+        const newRot = {
+          x: currentRot.x + rx,
+          y: currentRot.y + ry,
+          z: currentRot.z + rz
+        };
+        cameraRig.setAttribute('animation__rotate', {
+          property: 'rotation',
+          to: `${newRot.x} ${newRot.y} ${newRot.z}`,
+          dur: 300,
+          easing: 'easeOutQuad'
         });
       }
 
       function resetCamera() {
-        cameraRig.setAttribute('position', {x: 0, y: 1.6, z: 0});
+        cameraRig.setAttribute('animation__move', {
+          property: 'position',
+          to: '0 1.6 0',
+          dur: 400,
+          easing: 'easeOutExpo'
+        });
+        cameraRig.setAttribute('animation__rotate', {
+          property: 'rotation',
+          to: '0 0 0',
+          dur: 400,
+          easing: 'easeOutExpo'
+        });
       }
     </script>
   </body>
 </html>
+
